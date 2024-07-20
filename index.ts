@@ -10,7 +10,7 @@ export class Nudol {
 	handlers: Map<Method, Map<Path, () => any>>;
 	public_path: string|null;
 	routes_path: string|null;
-	current_url: string|null;
+	pathname: string|null;
 
 	createElement: any
 	renderToString: any
@@ -32,7 +32,7 @@ export class Nudol {
 		this.routes_path = null;
 		this.createElement = React.createElement;
 		this.renderToString = ReactDom.renderToString;
-		this.current_url = null;
+		this.pathname = null;
 
 	}
 
@@ -64,7 +64,8 @@ export class Nudol {
 		let doc = false 
 
 		for (const file of files) {
-			if(file == "routes/_document.jsx") {
+			console.log("file:", file)
+			if(file == "_document.jsx") {
 				doc = true
 			}
 		}
@@ -144,7 +145,7 @@ export class Nudol {
 			const ext = path.extname(file);
 			const name = path.basename(file, ext);
 
-			component_path = path.join("../routes/", file)
+			component_path = path.join("../", this.routes_path!, file)
 
 			const genfilename = path.join("./.tmp", file.toLowerCase()) 
 
@@ -173,7 +174,15 @@ export class Nudol {
 
 	hydrationScript() {
 
-		return this.createElement("script", { src: `./.tmp/${this.current_url}.js`, defer: 'defer' })
+		let file_path = (this.pathname?.split("/")[1])?.toLowerCase()
+		
+		if(this.pathname == "/") {
+
+			file_path = "index"
+
+		}
+
+		return this.createElement("script", { src: `./.tmp/${file_path}.js`, defer: 'defer' })
 
 	}
 
@@ -191,12 +200,14 @@ export class Nudol {
 			port: this.port,
 			fetch(req) {
 
-				self.current_url = (new URL(req.url).pathname.split("/")[1]).toLowerCase()
+				self.pathname = new URL(req.url).pathname
 
-				if(self.current_url == "public") {
+				//TODO: "public" folder can be "./public" pathname (/public) != ./pulbic 
+
+				if((self.pathname.split("/")[1]).toLowerCase() == "public") {
 					return new Response(Bun.file("." + new URL(req.url).pathname))
 				} 
-				if(self.current_url == ".tmp") {
+				if((self.pathname.split("/")[1]).toLowerCase() == ".tmp") {
 					return new Response(Bun.file("." + new URL(req.url).pathname))
 				} 
 
