@@ -1,15 +1,32 @@
-# mylib
+# Nudol
+ Extremely slow, сlumsy, cringe framework for combat helicopters
 
-To install dependencies:
-
-```bash
-bun install
+ Focus on debugging this library rather than debugging your own application.
+## Quick Start
 ```
-
-To run:
-
-```bash
-bun run index.ts
+npm create ... i was joking, git clone to node_modules
 ```
+## Features
+* Fragile routing 
+* Type Usafety (all is any)
+* Super-high memory usage (possible memory leaks)
+* Terrible API
+* Third-class TypeScript support. (use js plz)
+* Doesn't work on any Runtime: **Node.js**, **Deno**, **Cloudflare Workers**, **Vercel**, **AWS Lambda**...
 
-This project was created using `bun init` in bun v1.1.17. [Bun](https://bun.sh) is a fast all-in-one JavaScript runtime.
+## Example
+```js
+import { Nudol } from "nudol"
+import React from "react"
+import ReactDom from "react-dom/server"
+
+const nudol = new Nudol("8083", React, ReactDom)
+
+nudol.get("/", () => {
+  return new Response("Hello world")
+})
+
+nudol.listen()
+```
+## Documentation
+Never...
