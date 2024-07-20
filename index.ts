@@ -1,4 +1,4 @@
-import { readdir } from "node:fs/promises";
+import { readdir, mkdir, exists } from "node:fs/promises";
 import { Glob } from "bun"
 import path from "node:path" 
 
@@ -153,6 +153,10 @@ export class Nudol {
 
 			entrypoints.push(genfilename)
 
+			if(!(await exists("./.tmp"))) {
+				await mkdir("./.tmp")
+			}
+
 			Bun.write(genfilename,
 				`
 					import { hydrateRoot } from "react-dom/client"\n
@@ -180,7 +184,9 @@ export class Nudol {
 
 		const self = this
 
-		self.client()
+		if(this.routes_path) {
+			self.client()
+		}
 
 		Bun.serve({
 			port: this.port,
@@ -207,6 +213,4 @@ export class Nudol {
 
 	}
 }
-
-
 
