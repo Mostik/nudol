@@ -1,5 +1,4 @@
 import { readdir, mkdir, exists } from "node:fs/promises";
-import { Glob } from "bun"
 import path from "node:path" 
 
 type Method = string
@@ -62,12 +61,12 @@ export class Nudol {
 
 		const files = await readdir(this.routes_path);
 
-		const glob = new Glob(path.join(this.routes_path!, "/*.jsx"))
+		let doc = false 
 
-		const doc = glob.match("routes/_document.jsx")
-
-		for await (const file of glob.scan(".")) {
-			console.log(file);
+		for (const file of files) {
+			if(file == "routes/_document.jsx") {
+				doc = true
+			}
 		}
 
 		let doc_module = undefined;
@@ -107,29 +106,27 @@ export class Nudol {
 			const ext = path.extname(file);
 			const name = path.basename(file, ext);
 
-			(async () => {
-				try {
-					const module = await import(path.join(process.cwd(), path.join(this.routes_path!, file)))
-					if (name == "_document") {
-					} else if(name == "index") {
-						this.handlers.get("GET")?.set("/", async () => {
-							return ret_response(module.default)
-						})
-						this.handlers.get("POST")?.set("/", async () => {
-							return ret_response(module.default)
-						})
-					} else {
-						this.handlers.get("GET")?.set(path.join("/", name.toLowerCase()), async () => {
-							return ret_response(module.default)
-						})
-						this.handlers.get("POST")?.set(path.join("/", name.toLowerCase()), async () => {
-							return ret_response(module.default)
-						})
-					}
-				} catch {
-
+			try {
+				const module = await import(path.join(process.cwd(), path.join(this.routes_path!, file)))
+				if (name == "_document") {
+				} else if(name == "index") {
+					this.handlers.get("GET")?.set("/", async () => {
+						return ret_response(module.default)
+					})
+					this.handlers.get("POST")?.set("/", async () => {
+						return ret_response(module.default)
+					})
+				} else {
+					this.handlers.get("GET")?.set(path.join("/", name.toLowerCase()), async () => {
+						return ret_response(module.default)
+					})
+					this.handlers.get("POST")?.set(path.join("/", name.toLowerCase()), async () => {
+						return ret_response(module.default)
+					})
 				}
-			})()
+			} catch {
+
+			}
 
 		}
 
@@ -167,10 +164,10 @@ export class Nudol {
 
 		}
 
-		console.log(await Bun.build({
+		await Bun.build({
 			entrypoints: entrypoints,
 			outdir: './.tmp',
-		}));
+		});
 
 	}
 
@@ -187,6 +184,8 @@ export class Nudol {
 		if(this.routes_path) {
 			self.client()
 		}
+
+		console.log(self.handlers)
 
 		Bun.serve({
 			port: this.port,
