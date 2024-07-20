@@ -1,11 +1,14 @@
-import { readdir, lstat, unlink } from "node:fs/promises";
+import { readdir } from "node:fs/promises";
 import { Glob } from "bun"
 import path from "node:path" 
+
+type Method = string
+type Path = string
 
 export class Nudol {
 
 	port: string;
-	handlers: Map<string, () => any>;
+	handlers: Map<Method, Map<Path, () => any>>;
 	public_path: string|null;
 	routes_path: string|null;
 	current_url: string|null;
@@ -17,7 +20,15 @@ export class Nudol {
 	constructor( port: string, React: any, ReactDom: any ) {
 
 		this.port = port;
-		this.handlers = new Map()
+		this.handlers = new Map([
+			["GET", new Map()],
+			["POST", new Map()],
+			["PUT", new Map()],
+			["PATCH", new Map()],
+			["DELETE", new Map()],
+			["HEAD", new Map()],
+			["OPTIONS", new Map()],
+		])
 		this.public_path = null;
 		this.routes_path = null;
 		this.createElement = React.createElement;
@@ -27,9 +38,15 @@ export class Nudol {
 	}
 
 
-	get( url: string, fn: () => void ) {
+	get( path: string, fn: () => void ) {
 
-		this.handlers.set(url, fn)
+		this.handlers.get("GET")?.set(path, fn)
+
+	}
+
+	post( path: string, fn: () => void ) {
+
+		this.handlers.get("POST")?.set(path, fn)
 
 	}
 
@@ -93,15 +110,19 @@ export class Nudol {
 			(async () => {
 				try {
 					const module = await import(path.join(process.cwd(), path.join(this.routes_path!, file)))
-					if(name == "index") {
-						this.handlers.set("/", async () => {
+					if (name == "_document") {
+					} else if(name == "index") {
+						this.handlers.get("GET")?.set("/", async () => {
 							return ret_response(module.default)
 						})
-					} else if (name == "_document") {
-
-
+						this.handlers.get("POST")?.set("/", async () => {
+							return ret_response(module.default)
+						})
 					} else {
-						this.handlers.set(path.join("/", name.toLowerCase()), async () => {
+						this.handlers.get("GET")?.set(path.join("/", name.toLowerCase()), async () => {
+							return ret_response(module.default)
+						})
+						this.handlers.get("POST")?.set(path.join("/", name.toLowerCase()), async () => {
 							return ret_response(module.default)
 						})
 					}
@@ -164,6 +185,7 @@ export class Nudol {
 		Bun.serve({
 			port: this.port,
 			fetch(req) {
+
 				self.current_url = (new URL(req.url).pathname.split("/")[1]).toLowerCase()
 
 				if(self.current_url == "public") {
@@ -173,10 +195,9 @@ export class Nudol {
 					return new Response(Bun.file("." + new URL(req.url).pathname))
 				} 
 
-				const handler = self.handlers.get(new URL(req.url).pathname)
+				const handler = self.handlers.get(req.method)?.get(new URL(req.url).pathname)
 
-
-				if(handler != undefined) {
+				if(handler != undefined) { 
 					return handler()
 				}
 
