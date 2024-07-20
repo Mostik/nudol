@@ -107,8 +107,11 @@ export class Nudol {
 			const ext = path.extname(file);
 			const name = path.basename(file, ext);
 
+
 			try {
-				const module = await import(path.join(process.cwd(), path.join(this.routes_path!, file)))
+				const import_path = path.join(process.cwd(), this.routes_path!, file)
+				const module = await import(import_path)
+
 				if (name == "_document") {
 				} else if(name == "index") {
 					this.handlers.get("GET")?.set("/", async () => {
@@ -125,7 +128,9 @@ export class Nudol {
 						return ret_response(module.default)
 					})
 				}
-			} catch {
+			} catch (error) {
+
+				console.log("Error import file", error)
 
 			}
 
@@ -168,6 +173,7 @@ export class Nudol {
 		await Bun.build({
 			entrypoints: entrypoints,
 			outdir: './.tmp',
+			format: "esm",
 		});
 
 	}
@@ -182,7 +188,7 @@ export class Nudol {
 
 		}
 
-		return this.createElement("script", { src: `./.tmp/${file_path}.js`, defer: 'defer' })
+		return this.createElement("script", { type: "module", src: `./.tmp/${file_path}.js`, defer: 'defer' })
 
 	}
 
@@ -202,7 +208,7 @@ export class Nudol {
 
 				self.pathname = new URL(req.url).pathname
 
-				//TODO: "public" folder can be "./public" pathname (/public) != ./pulbic 
+				//TODO: "public" folder can be "./public" pathname (/public) != ./public 
 
 				if((self.pathname.split("/")[1]).toLowerCase() == "public") {
 					return new Response(Bun.file("." + new URL(req.url).pathname))
