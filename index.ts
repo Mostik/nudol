@@ -7,7 +7,7 @@ type Path = string
 export class Nudol {
 
 	port: string;
-	handlers: Map<Method, Map<Path, () => any>>;
+	handlers: Map<Method, Map<Path, (request: Request) => any>>;
 	public_path: string|null;
 	routes_path: string|null;
 	pathname: string|null;
@@ -37,13 +37,13 @@ export class Nudol {
 	}
 
 
-	get( path: string, fn: () => void ) {
+	get( path: string, fn: (request: Request) => void ) {
 
 		this.handlers.get("GET")?.set(path, fn)
 
 	}
 
-	post( path: string, fn: () => void ) {
+	post( path: string, fn: (request: Request) => void ) {
 
 		this.handlers.get("POST")?.set(path, fn)
 
@@ -200,6 +200,7 @@ export class Nudol {
 			self.client()
 		}
 
+		console.log("Listen ", this.port)
 		console.log(self.handlers)
 
 		Bun.serve({
@@ -220,7 +221,7 @@ export class Nudol {
 				const handler = self.handlers.get(req.method)?.get(new URL(req.url).pathname)
 
 				if(handler != undefined) { 
-					return handler()
+					return handler(req)
 				}
 
 				return new Response("Bun!");
