@@ -4,15 +4,18 @@
  Focus on debugging this library rather than debugging your own application.
 ## Quick Start
 ```
-npm create ... i was joking, git clone to node_modules
+bun add nudol
 ```
 ## Features
 * Fragile routing 
-* Type Usafety (all is any)
+* Type Unsafety (all is any)
 * Super-high memory usage (possible memory leaks)
 * Terrible API
-* Third-class TypeScript support. (use js plz)
+* Third-class TypeScript support. (use js)
+* Breaking changes every day
+* No backward compatibility
 * Doesn't work on any Runtime: **Node.js**, **Deno**, **Cloudflare Workers**, **Vercel**, **AWS Lambda**...
+
 
 ## Example
 ```js
