@@ -24,9 +24,9 @@ import React from "react"
 import ReactDom from "react-dom"
 
 const nudol = new Nudol({
-	 port: "8088",
-	 React: React,
-	 ReactDom: ReactDom,
+  port: "8088",
+  React: React,
+  ReactDom: ReactDom,
 }) 
 
 nudol.get("/", () => {
