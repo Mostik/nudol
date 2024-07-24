@@ -1,13 +1,50 @@
 import { readdir, mkdir, exists } from "node:fs/promises";
 import path from "node:path" 
+import _ from "lodash"
+import { parseRoute, parseRequest } from "./src/routes";
 
-type Method = string
-type Path = string
+export interface PathPart {
+	id: number,
+	value: string,
+}
 
+export interface PathVariable {
+	id: number,
+	name: string,
+}
+
+export interface Handler {
+	method: string,
+	path: string,
+	parts: PathPart[],
+	variables?: PathVariable[],
+}
+
+interface Config {
+	port: string,
+	host?: string,
+	public?: string,
+	routes?: string,
+	React?: any,
+	ReactDom?: any,
+}
+
+/**
+* @example
+* ```ts
+* const nudol = new Nudol({ port: "8080", host: "localhost"... })
+*
+* nudol.get("/", () => {
+*   return new Response("Hello world")
+* })
+*
+* nudol.listen()
+* ```
+*/
 export class Nudol {
 
 	port: string;
-	handlers: Map<Method, Map<Path, (request: Request) => any>>;
+	handlers: Map<Handler, (request: Request) => any>;
 	public_path: string|null;
 	routes_path: string|null;
 	pathname: string|null;
@@ -16,36 +53,27 @@ export class Nudol {
 	renderToString: any
 	
 
-	constructor( port: string, React: any, ReactDom: any ) {
+	constructor(config: Config) {
 
-		this.port = port;
-		this.handlers = new Map([
-			["GET", new Map()],
-			["POST", new Map()],
-			["PUT", new Map()],
-			["PATCH", new Map()],
-			["DELETE", new Map()],
-			["HEAD", new Map()],
-			["OPTIONS", new Map()],
-		])
-		this.public_path = null;
+		this.port = config.port;
+		this.handlers = new Map([])
+		this.public_path = config.public || null;
 		this.routes_path = null;
-		this.createElement = React.createElement;
-		this.renderToString = ReactDom.renderToString;
+		this.createElement = config.React.createElement;
+		this.renderToString = config.ReactDom.renderToString;
 		this.pathname = null;
 
 	}
 
-
 	get( path: string, fn: (request: Request) => void ) {
 
-		this.handlers.get("GET")?.set(path, fn)
+		this.handlers.set(parseRoute("GET", path), fn)
 
 	}
 
 	post( path: string, fn: (request: Request) => void ) {
 
-		this.handlers.get("POST")?.set(path, fn)
+		this.handlers.set(parseRoute("POST", path), fn)
 
 	}
 
@@ -114,19 +142,14 @@ export class Nudol {
 
 				if (name == "_document") {
 				} else if(name == "index") {
-					this.handlers.get("GET")?.set("/", async () => {
+					this.handlers.set({ method: "GET", path: "/", parts: [{id: 0, value: ""}], variables: [] }, async () => {
 						return ret_response(module.default)
 					})
-					this.handlers.get("POST")?.set("/", async () => {
+					this.handlers.set({ method: "POST", path: "/", parts: [{id: 0, value: ""}], variables: [] }, async () => {
 						return ret_response(module.default)
 					})
 				} else {
-					this.handlers.get("GET")?.set(path.join("/", name.toLowerCase()), async () => {
-						return ret_response(module.default)
-					})
-					this.handlers.get("POST")?.set(path.join("/", name.toLowerCase()), async () => {
-						return ret_response(module.default)
-					})
+					//TODO: something
 				}
 			} catch (error) {
 
@@ -206,22 +229,46 @@ export class Nudol {
 		Bun.serve({
 			port: this.port,
 			fetch(req) {
+				
+				const parsedrequest = parseRequest(req)
 
 				self.pathname = new URL(req.url).pathname
 
-				//TODO: "public" folder can be "./public" pathname (/public) != ./public 
-
-				if((self.pathname.split("/")[1]).toLowerCase() == "public") {
+				if((parsedrequest.parts[1].value).toLowerCase() == "public") {
 					return new Response(Bun.file("." + new URL(req.url).pathname))
 				} 
-				if((self.pathname.split("/")[1]).toLowerCase() == ".tmp") {
+				if((parsedrequest.parts[1].value).toLowerCase() == ".tmp") {
 					return new Response(Bun.file("." + new URL(req.url).pathname))
 				} 
 
-				const handler = self.handlers.get(req.method)?.get(new URL(req.url).pathname)
+				for(const [key, handler] of self.handlers) {
 
-				if(handler != undefined) { 
+					let equal = true;
+
+					if(parsedrequest.parts.length != key.parts.length) continue; 
+
+					for(const [id, part] of parsedrequest.parts.entries()) {
+
+						if(_.find(key.variables, function(k: any) {
+							return k.id == part.id && part.value != "" 
+						})) {
+
+						} else {
+							if(part.value == key.parts[id].value) {
+
+							} else {
+								equal = false
+								break;
+							}
+						}
+
+					}
+
+					if(equal == false) continue;
+
+
 					return handler(req)
+
 				}
 
 				return new Response("Bun!");
