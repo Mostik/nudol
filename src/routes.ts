@@ -1,4 +1,5 @@
 import { type Handler, type PathVariable, type PathPart } from "../index.ts"
+import _ from "lodash"
 
 export function parseRoute(method: string, path: string): Handler {
 
@@ -35,3 +36,17 @@ export function parseRequest(request: Request): Handler {
 	return { method: request.method, path: pathname, parts: parts, variables: [] } as Handler
 
 } 
+
+export function routeValue(handler: Handler,  name: string) {
+
+	return _.find(handler.variables, { name: name }).value
+
+}
+
+export function routeParam(url: URL, name: string): string|null {
+
+	const params = url.searchParams
+
+	return params.get(name)
+
+}

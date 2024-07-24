@@ -11,6 +11,7 @@ export interface PathPart {
 export interface PathVariable {
 	id: number,
 	name: string,
+	value?: string,
 }
 
 export interface Handler {
@@ -45,9 +46,11 @@ export class Nudol {
 
 	port: string;
 	handlers: Map<Handler, (request: Request) => any>;
+	handler: Handler | null;
 	public_path: string|null;
 	routes_path: string|null;
-	pathname: string|null;
+	url: URL|null;
+	pathname: string|null; //TODO: remove this
 
 	createElement: any
 	renderToString: any
@@ -62,6 +65,8 @@ export class Nudol {
 		this.createElement = config.React.createElement;
 		this.renderToString = config.ReactDom.renderToString;
 		this.pathname = null;
+		this.url = null;
+		this.handler = null;
 
 	}
 
@@ -230,14 +235,15 @@ export class Nudol {
 			port: this.port,
 			fetch(req) {
 				
-				const parsedrequest = parseRequest(req)
+				self.handler = parseRequest(req)
 
-				self.pathname = new URL(req.url).pathname
+				self.url = new URL(req.url)
+				self.pathname = self.url.pathname
 
-				if((parsedrequest.parts[1].value).toLowerCase() == "public") {
+				if((self.handler.parts[1].value).toLowerCase() == "public") {
 					return new Response(Bun.file("." + new URL(req.url).pathname))
 				} 
-				if((parsedrequest.parts[1].value).toLowerCase() == ".tmp") {
+				if((self.handler.parts[1].value).toLowerCase() == ".tmp") {
 					return new Response(Bun.file("." + new URL(req.url).pathname))
 				} 
 
@@ -245,13 +251,17 @@ export class Nudol {
 
 					let equal = true;
 
-					if(parsedrequest.parts.length != key.parts.length) continue; 
+					if(self.handler.parts.length != key.parts.length) continue; 
 
-					for(const [id, part] of parsedrequest.parts.entries()) {
+					for(const [id, part] of self.handler.parts.entries()) {
 
-						if(_.find(key.variables, function(k: any) {
+						const find = _.find(key.variables, function(k: any) {
 							return k.id == part.id && part.value != "" 
-						})) {
+						})
+
+						if(find) {
+
+							self.handler?.variables?.push({ id: find.id, name: find.name, value: part.value})
 
 						} else {
 							if(part.value == key.parts[id].value) {
@@ -271,7 +281,7 @@ export class Nudol {
 
 				}
 
-				return new Response("Bun!");
+				return new Response("404 Not found");
 			},
 		});
 
