@@ -21,7 +21,7 @@ bun add nudol
 ```js
 import { Nudol } from "nudol"
 import React from "react"
-import ReactDom from "react-dom"
+import ReactDom from "react-dom/server"
 
 const nudol = new Nudol({
   port: "8088",

@@ -19,9 +19,7 @@ export function parseRoute(method: string, path: string): Handler {
 
 	}
 
-
 	return { method: method, path: path, parts: parts, variables: variables } as Handler
-
 
 }
 

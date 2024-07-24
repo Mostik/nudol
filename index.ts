@@ -95,18 +95,18 @@ export class Nudol {
 		const files = await readdir(this.routes_path);
 
 		let doc = false 
-
-		for (const file of files) {
-			console.log("file:", file)
-			if(file == "_document.jsx") {
-				doc = true
-			}
-		}
-
 		let doc_module = undefined;
 
-		if(doc) {
-			doc_module  = await import(path.join(process.cwd(), path.join(this.routes_path!, "_document.jsx")))
+		for (const file of files) {
+
+			const { name, ext } = path.parse(file)
+
+			if(name == "_document") {
+				[".js", ".ts", ".jsx", ".tsx"].includes(ext)
+				doc_module  = await import(path.join(process.cwd(), path.join(this.routes_path!, ("_document" + ext))))
+				doc = true
+			}
+
 		}
 
 		const ret_response = ( element: any ) => {
@@ -147,14 +147,20 @@ export class Nudol {
 
 				if (name == "_document") {
 				} else if(name == "index") {
-					this.handlers.set({ method: "GET", path: "/", parts: [{id: 0, value: ""}], variables: [] }, async () => {
+					this.handlers.set(parseRoute("GET", "/"), async () => {
 						return ret_response(module.default)
 					})
-					this.handlers.set({ method: "POST", path: "/", parts: [{id: 0, value: ""}], variables: [] }, async () => {
+					this.handlers.set(parseRoute("POST", "/"), async () => {
 						return ret_response(module.default)
 					})
 				} else {
-					//TODO: something
+					const handler_path = path.join("/", name.toLowerCase() )
+					this.handlers.set(parseRoute("GET", handler_path), async () => {
+						return ret_response(module.default)
+					})
+					this.handlers.set(parseRoute("POST", handler_path), async () => {
+						return ret_response(module.default)
+					})
 				}
 			} catch (error) {
 
