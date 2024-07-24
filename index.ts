@@ -49,8 +49,7 @@ export class Nudol {
 	handler: Handler | null;
 	public_path: string|null;
 	routes_path: string|null;
-	url: URL|null;
-	pathname: string|null; //TODO: remove this
+	url?: URL;
 
 	createElement: any
 	renderToString: any
@@ -64,8 +63,6 @@ export class Nudol {
 		this.routes_path = null;
 		this.createElement = config.React.createElement;
 		this.renderToString = config.ReactDom.renderToString;
-		this.pathname = null;
-		this.url = null;
 		this.handler = null;
 
 	}
@@ -111,35 +108,28 @@ export class Nudol {
 
 		const ret_response = ( element: any ) => {
 
-			if(doc) {
-				return new Response(this.renderToString(
-					this.createElement(
-						doc_module.default,
-						{ hydrationScript: this.hydrationScript.bind(this) },
-						this.createElement(element)
-					)
-				), {
-					headers: {
-						'Content-type': "text/html; charset=utf-8"
-					}
-				})
-
-			} else {
-				return new Response(this.renderToString(this.createElement(element)), {
-					headers: {
-						'Content-type': "text/html; charset=utf-8"
-					}
-				})
-
+			const options = {
+				headers: {
+					'Content-type': "text/html; charset=utf-8"
+				}
 			}
+
+			const resp = (doc) ?
+				this.createElement(
+					doc_module.default,
+					{ hydrationScript: this.hydrationScript.bind(this) },
+					this.createElement(element)
+				)
+				:
+				this.createElement(element)
+
+			return new Response( this.renderToString(resp), options)
 
 		} 
 
 		for(const file of files) {
 
-			const ext = path.extname(file);
-			const name = path.basename(file, ext);
-
+			const { name, ext } = path.parse(file)
 
 			try {
 				const import_path = path.join(process.cwd(), this.routes_path!, file)
@@ -181,8 +171,7 @@ export class Nudol {
 
 		for(const file of files) {
 
-			const ext = path.extname(file);
-			const name = path.basename(file, ext);
+			// const { name, ext } = path.parse(file)
 
 			component_path = path.join("../", this.routes_path!, file)
 
@@ -214,9 +203,9 @@ export class Nudol {
 
 	hydrationScript() {
 
-		let file_path = (this.pathname?.split("/")[1])?.toLowerCase()
+		let file_path = (this.url!.pathname?.split("/")[1])?.toLowerCase()
 		
-		if(this.pathname == "/") {
+		if(this.url!.pathname == "/") {
 
 			file_path = "index"
 
@@ -244,13 +233,12 @@ export class Nudol {
 				self.handler = parseRequest(req)
 
 				self.url = new URL(req.url)
-				self.pathname = self.url.pathname
 
 				if((self.handler.parts[1].value).toLowerCase() == "public") {
-					return new Response(Bun.file("." + new URL(req.url).pathname))
+					return new Response(Bun.file("." + self.url.pathname))
 				} 
 				if((self.handler.parts[1].value).toLowerCase() == ".tmp") {
-					return new Response(Bun.file("." + new URL(req.url).pathname))
+					return new Response(Bun.file("." + self.url.pathname))
 				} 
 
 				for(const [key, handler] of self.handlers) {
@@ -270,9 +258,7 @@ export class Nudol {
 							self.handler?.variables?.push({ id: find.id, name: find.name, value: part.value})
 
 						} else {
-							if(part.value == key.parts[id].value) {
-
-							} else {
+							if(part.value != key.parts[id].value) {
 								equal = false
 								break;
 							}
@@ -281,7 +267,6 @@ export class Nudol {
 					}
 
 					if(equal == false) continue;
-
 
 					return handler(req)
 
