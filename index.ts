@@ -30,6 +30,18 @@ interface Config {
 	ReactDom?: any,
 }
 
+export enum Method {
+	CONNECT = 'CONNECT',
+	DELETE = 'DELETE',
+	GET = 'GET',
+	HEAD = 'HEAD',
+	OPTIONS = 'OPTIONS',
+	PATCH = 'PATCH',
+	POST = 'POST',
+	PUT = 'PUT',
+	TRACE = 'TRACE',
+}
+
 /**
 * @example
 * ```ts
@@ -76,6 +88,14 @@ export class Nudol {
 	post( path: string, fn: (request: Request) => void ) {
 
 		this.handlers.set(parseRoute("POST", path), fn)
+
+	}
+
+	notfound( methods: Method[] , fn: (request: Request) => void ) {
+
+		for(let method of methods) {
+			this.handlers.set(parseRoute(method, "404"), fn)
+		}
 
 	}
 
@@ -226,10 +246,11 @@ export class Nudol {
 		console.log("Listen ", this.port)
 		console.log(self.handlers)
 
+
 		Bun.serve({
 			port: this.port,
 			fetch(req) {
-				
+
 				self.handler = parseRequest(req)
 
 				self.url = new URL(req.url)
@@ -270,6 +291,12 @@ export class Nudol {
 
 					return handler(req)
 
+				}
+
+				for( const [key, handle] of self.handlers.entries()) {
+					if(_.find([key], { method: req.method, path: "404"})) {
+						return handle(req)
+					}
 				}
 
 				return new Response("404 Not found");

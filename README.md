@@ -11,7 +11,7 @@ bun add nudol
 * Type Unsafety (all is any)
 * Super-high memory usage (possible memory leaks)
 * Terrible API
-* Third-class TypeScript support. (use js)
+* Second-class TypeScript support. (use js)
 * Breaking changes every day
 * No backward compatibility
 * Doesn't work on any Runtime: **Node.js**, **Deno**, **Cloudflare Workers**, **Vercel**, **AWS Lambda**...
@@ -31,6 +31,10 @@ const nudol = new Nudol({
 
 nudol.get("/", () => {
   return new Response("Hello world")
+})
+
+nudol.notfound([Method.GET, Method.POST], () => {
+  return new Response("There's nothing here")
 })
 
 nudol.listen()
