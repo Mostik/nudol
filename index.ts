@@ -164,7 +164,7 @@ export class Nudol {
 						return ret_response(module.default)
 					})
 				} else {
-					const handler_path = path.join("/", name.toLowerCase() )
+					const handler_path = "/" + name.toLowerCase();
 					this.handlers.set(parseRoute("GET", handler_path), async () => {
 						return ret_response(module.default)
 					})
