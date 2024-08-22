@@ -30,6 +30,13 @@ interface Config {
 	ReactDom?: any,
 }
 
+interface WebSocket {
+	path: "/ws",
+	onopen: (ws:any) => any,
+	onmessage: (ws:any, message: any) => any,
+	onclose: (ws:any, code: any) => any,
+}
+
 export enum Method {
 	CONNECT = 'CONNECT',
 	DELETE = 'DELETE',
@@ -62,6 +69,7 @@ export class Nudol {
 	public_path: string|null;
 	routes_path: string|null;
 	url?: URL;
+	websocket: WebSocket | null;
 
 	createElement: any
 	renderToString: any
@@ -76,6 +84,7 @@ export class Nudol {
 		this.createElement = config.React.createElement;
 		this.renderToString = config.ReactDom.renderToString;
 		this.handler = null;
+		this.websocket = null; 
 
 	}
 
@@ -88,6 +97,12 @@ export class Nudol {
 	post( path: string, fn: (request: Request) => void ) {
 
 		this.handlers.set(parseRoute("POST", path), fn)
+
+	}
+
+	ws( ws: WebSocket ) {
+
+		this.websocket = ws;
 
 	}
 
@@ -245,6 +260,7 @@ export class Nudol {
 
 		console.log("Listen ", this.port)
 		console.log(self.handlers)
+		console.log(self.websocket)
 
 
 		Bun.serve({
@@ -299,8 +315,28 @@ export class Nudol {
 					}
 				}
 
+				if(self.websocket != null) {
+					if(self.websocket.path == self.url.pathname) {
+						const success = this.upgrade(req);
+						if (success) {
+						  return undefined;
+						}
+					}
+				}
+
 				return new Response("404 Not found");
 			},
+			websocket: {
+				async open(ws) {
+					self.websocket!.onopen(ws)
+				},
+				async message(ws, message) {
+					self.websocket!.onmessage(ws, message)
+				},
+				async close(ws, code) {
+					self.websocket!.onclose(ws, code)
+				}
+			}
 		});
 
 	}
