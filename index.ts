@@ -67,6 +67,7 @@ export class Nudol {
 	handlers: Map<Handler, (request: Request) => any>;
 	handler: Handler | null;
 	public_path: string|null;
+	public_alias: string|null;
 	routes_path: string|null;
 	url?: URL;
 	websocket: WebSocket | null;
@@ -79,7 +80,9 @@ export class Nudol {
 
 		this.port = config.port;
 		this.handlers = new Map([])
+		//FIXME: config.public to config.public.(path, alias)  
 		this.public_path = config.public || null;
+		this.public_alias = null;
 		this.routes_path = null;
 		this.createElement = config.React.createElement;
 		this.renderToString = config.ReactDom.renderToString;
@@ -114,9 +117,10 @@ export class Nudol {
 
 	}
 
-	public( path: string ) {
+	public( path: string, alias: string = "public" ) {
 
 		this.public_path = path;
+		this.public_alias = alias;
 
 	}
 
@@ -271,8 +275,8 @@ export class Nudol {
 
 				self.url = new URL(req.url)
 
-				if((self.handler.parts[1].value).toLowerCase() == "public") {
-					return new Response(Bun.file("." + self.url.pathname))
+				if((self.handler.parts[1].value).toLowerCase() == self.public_alias) {
+					return new Response(Bun.file(path.join(self.public_path, self.handler.parts[self.handler.parts.length - 1].value ) ))
 				} 
 				if((self.handler.parts[1].value).toLowerCase() == ".tmp") {
 					return new Response(Bun.file("." + self.url.pathname))
@@ -324,7 +328,7 @@ export class Nudol {
 					}
 				}
 
-				return new Response("404 Not found");
+				return new Response("404 Not found", { status: 404 });
 			},
 			websocket: {
 				async open(ws) {
