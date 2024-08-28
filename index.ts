@@ -232,12 +232,17 @@ export class Nudol {
 
 		}
 
-		await Bun.build({
+		const result = await Bun.build({
 			entrypoints: entrypoints,
 			outdir: './.tmp',
 			format: "esm",
 		});
 
+		if(!result.success) {
+			console.log(result.logs)
+			throw new Error("client error")
+
+		} 
 	}
 
 	hydrationScript() {
