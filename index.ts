@@ -2,6 +2,7 @@ import { readdir, mkdir, exists } from "node:fs/promises";
 import path from "node:path" 
 import _ from "lodash"
 import { parseRoute, parseRequest } from "./src/routes";
+import { type Server } from "bun"
 
 export interface PathPart {
 	id: number,
@@ -71,6 +72,7 @@ export class Nudol {
 	routes_path: string|null;
 	url?: URL;
 	websocket: WebSocket | null;
+	upgrade_function: (( server: Server, request: Request) => Promise<boolean>) | null;
 
 	createElement: any
 	renderToString: any
@@ -88,6 +90,8 @@ export class Nudol {
 		this.renderToString = config.ReactDom.renderToString;
 		this.handler = null;
 		this.websocket = null; 
+		this.upgrade_function = null;
+
 
 	}
 
@@ -107,6 +111,10 @@ export class Nudol {
 
 		this.websocket = ws;
 
+	}
+
+	upgrade( fn: ( server: Server, request: Request ) => Promise<boolean> ) {
+		this.upgrade_function = fn
 	}
 
 	notfound( methods: Method[] , fn: (request: Request) => void ) {
@@ -271,10 +279,9 @@ export class Nudol {
 		console.log(self.handlers)
 		console.log(self.websocket)
 
-
 		Bun.serve({
 			port: this.port,
-			fetch(req) {
+			async fetch(req) {
 
 				self.handler = parseRequest(req)
 
@@ -326,9 +333,21 @@ export class Nudol {
 
 				if(self.websocket != null) {
 					if(self.websocket.path == self.url.pathname) {
-						const success = this.upgrade(req);
-						if (success) {
-						  return undefined;
+						if(self.upgrade_function) {
+							const success = await self.upgrade_function( this, req )
+
+							if (success) {
+								return undefined;
+							}
+
+						} else {
+
+							const success = this.upgrade(req);
+
+							if (success) {
+							  return undefined;
+							}
+
 						}
 					}
 				}
