@@ -136,7 +136,9 @@ export class Nudol {
 
 		this.routes_path = routes_directory_path;
 
-		const files = await readdir(this.routes_path);
+		const read_path = path.join( this.routes_path )
+
+		const files = await readdir( read_path );
 
 		let doc = false 
 		let doc_module = undefined;
@@ -220,14 +222,14 @@ export class Nudol {
 
 			// const { name, ext } = path.parse(file)
 
-			component_path = path.join("../", this.routes_path!, file)
+			component_path = path.join(process.cwd(), this.routes_path!, file)
 
-			const genfilename = path.join("./.tmp", file.toLowerCase()) 
+			const genfilename = path.join(process.cwd(), ".temp", file.toLowerCase()) 
 
 			entrypoints.push(genfilename)
 
-			if(!(await exists("./.tmp"))) {
-				await mkdir("./.tmp")
+			if(!(await exists( path.join( process.cwd(), ".temp")))) {
+				await mkdir( path.join( process.cwd(), ".temp") )
 			}
 
 			Bun.write(genfilename,
@@ -240,16 +242,18 @@ export class Nudol {
 
 		}
 
+		
+		let outdir = path.join( process.cwd(), ".temp" )
+
 		const result = await Bun.build({
 			entrypoints: entrypoints,
-			outdir: './.tmp',
+			outdir: outdir,
 			format: "esm",
 		});
 
 		if(!result.success) {
 			console.log(result.logs)
 			throw new Error("client error")
-
 		} 
 	}
 
@@ -263,7 +267,7 @@ export class Nudol {
 
 		}
 
-		return this.createElement("script", { type: "module", src: `./.tmp/${file_path}.js`, defer: 'defer' })
+		return this.createElement("script", { type: "module", src: `./.temp/${file_path}.js`, defer: 'defer' })
 
 	}
 
@@ -290,7 +294,7 @@ export class Nudol {
 				if((self.handler.parts[1].value).toLowerCase() == self.public_alias) {
 					return new Response(Bun.file(path.join(self.public_path, self.handler.parts[self.handler.parts.length - 1].value ) ))
 				} 
-				if((self.handler.parts[1].value).toLowerCase() == ".tmp") {
+				if((self.handler.parts[1].value).toLowerCase() == ".temp") {
 					return new Response(Bun.file("." + self.url.pathname))
 				} 
 
