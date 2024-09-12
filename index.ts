@@ -50,6 +50,8 @@ export enum Method {
 	TRACE = 'TRACE',
 }
 
+const temp_path = ".temp"
+
 /**
 * @example
 * ```ts
@@ -73,6 +75,7 @@ export class Nudol {
 	url?: URL;
 	websocket: WebSocket | null;
 	upgrade_function: (( server: Server, request: Request) => Promise<boolean>) | null;
+	temp_dir: boolean; 
 
 	createElement: any
 	renderToString: any
@@ -91,7 +94,7 @@ export class Nudol {
 		this.handler = null;
 		this.websocket = null; 
 		this.upgrade_function = null;
-
+		this.temp_dir = false;
 
 	}
 
@@ -220,16 +223,14 @@ export class Nudol {
 
 		for(const file of files) {
 
-			// const { name, ext } = path.parse(file)
-
 			component_path = path.join(process.cwd(), this.routes_path!, file)
 
-			const genfilename = path.join(process.cwd(), ".temp", file.toLowerCase()) 
+			const genfilename = path.join(process.cwd(), temp_path, file.toLowerCase()) 
 
 			entrypoints.push(genfilename)
 
-			if(!(await exists( path.join( process.cwd(), ".temp")))) {
-				await mkdir( path.join( process.cwd(), ".temp") )
+			if(!(await exists( path.join( process.cwd(), temp_path)))) {
+				await mkdir( path.join( process.cwd(), temp_path) )
 			}
 
 			Bun.write(genfilename,
@@ -243,13 +244,17 @@ export class Nudol {
 		}
 
 		
-		let outdir = path.join( process.cwd(), ".temp" )
+		let outdir = path.join( process.cwd(), temp_path )
 
 		const result = await Bun.build({
 			entrypoints: entrypoints,
-			outdir: outdir,
 			format: "esm",
 		});
+
+		for (const res of result.outputs) {
+		  const {base} = path.parse(res.path)
+		  Bun.write(path.join(outdir, base), res);
+		}
 
 		if(!result.success) {
 			console.log(result.logs)
@@ -267,7 +272,7 @@ export class Nudol {
 
 		}
 
-		return this.createElement("script", { type: "module", src: `./.temp/${file_path}.js`, defer: 'defer' })
+		return this.createElement("script", { type: "module", src: path.join( "./", temp_path, `${file_path}.js`), defer: 'defer' })
 
 	}
 
