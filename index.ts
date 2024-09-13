@@ -24,7 +24,7 @@ export interface Handler {
 
 interface Config {
 	port: string,
-	host?: string,
+	hostname?: string,
 	public?: string,
 	routes?: string,
 	React?: any,
@@ -67,6 +67,7 @@ const temp_path = ".temp"
 export class Nudol {
 
 	port: string;
+	hostname: string;
 	handlers: Map<Handler, (request: Request) => any>;
 	handler: Handler | null;
 	public_path: string|null;
@@ -84,6 +85,7 @@ export class Nudol {
 	constructor(config: Config) {
 
 		this.port = config.port;
+		this.hostname = config.hostname || "0.0.0.0",
 		this.handlers = new Map([])
 		//FIXME: config.public to config.public.(path, alias)  
 		this.public_path = config.public || null;
@@ -284,12 +286,13 @@ export class Nudol {
 			self.client()
 		}
 
-		console.log("Listen ", this.port)
+		console.log(`Listen ${this.hostname}:${this.port}`)
 		console.log(self.handlers)
 		console.log(self.websocket)
 
 		Bun.serve({
 			port: this.port,
+			hostname: this.hostname,
 			async fetch(req) {
 
 				self.handler = parseRequest(req)
