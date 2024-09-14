@@ -2,6 +2,7 @@ import { type Handler, type PathVariable, type PathPart, Nudol } from "../index.
 import _ from "lodash"
 import { readdir, mkdir, exists } from "node:fs/promises";
 import path from "node:path" 
+import { Method } from "./method.ts";
 
 export interface PathPart {
 	id: number,
@@ -75,18 +76,12 @@ export async function routes(this: Nudol, routes_directory_path: string ) {
 
 			if (name == "_document") {
 			} else if(name == "index") {
-				this.handlers.set(parseRoute("GET", "/"), async () => {
-					return ret_response(module.default)
-				})
-				this.handlers.set(parseRoute("POST", "/"), async () => {
+				this.handlers.set(parseRoute(Method.GET, "/"), async () => {
 					return ret_response(module.default)
 				})
 			} else {
 				const handler_path = "/" + name.toLowerCase();
-				this.handlers.set(parseRoute("GET", handler_path), async () => {
-					return ret_response(module.default)
-				})
-				this.handlers.set(parseRoute("POST", handler_path), async () => {
+				this.handlers.set(parseRoute(Method.GET, handler_path), async () => {
 					return ret_response(module.default)
 				})
 			}
