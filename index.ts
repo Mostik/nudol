@@ -1,7 +1,7 @@
 import { readdir, mkdir, exists } from "node:fs/promises";
 import path from "node:path" 
 import _ from "lodash"
-import { parseRoute, parseRequest, routes } from "./src/routes";
+import { parseRoute, parseRequest, routes, routeValue, routeParam } from "./src/routes";
 import { type Server } from "bun"
 import * as Hydration from "./src/hydration.ts"
 import * as Methods from "./src/method.ts"
@@ -47,6 +47,10 @@ export interface Nudol {
 	get( path: string, fn: (request: Request) => void ): void 
 	post( path: string, fn: (request: Request) => void ): void 
 	routes( routes_directory_path: string ): Promise<void>
+
+
+	routeValue(this: Nudol, name: string): any 
+	routeParam(this: Nudol, name: string): string|null 
 
 	hydrationScript(): any
 	hydrationBuild(): any
@@ -204,6 +208,8 @@ export class Nudol implements Nudol {
 }
 
 Nudol.prototype.routes = routes;
+Nudol.prototype.routeValue = routeValue;
+Nudol.prototype.routeParam = routeParam;
 
 Nudol.prototype.get = Methods.get;
 Nudol.prototype.post = Methods.post;

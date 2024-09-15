@@ -28,14 +28,30 @@ export async function routes(this: Nudol, routes_directory_path: string ) {
 
 	const read_path = path.join( this.routes_path )
 
-	const files = await readdir( read_path );
+	const files = await readdir( this.routes_path, { recursive: true, withFileTypes: true } )
+
+
+	// for( const gg of files ) {
+	//
+	// 	console.log(gg)
+	//
+	// 	if ( gg.isFile() ) {
+	//
+	// 		const rr = path.join(gg.parentPath,  path.parse( gg.name).name )
+	//
+	// 		console.log(rr)
+	//
+	// 	}
+	// }
+	//
+	// return;
 
 	let doc = false 
 	let doc_module = undefined;
 
 	for (const file of files) {
 
-		const { name, ext } = path.parse(file)
+		const { name, ext } = path.parse(file.name)
 
 		if(name == "_document") {
 			[".js", ".ts", ".jsx", ".tsx"].includes(ext)
@@ -47,12 +63,6 @@ export async function routes(this: Nudol, routes_directory_path: string ) {
 
 	const ret_response = ( element: any ) => {
 
-		const options = {
-			headers: {
-				'Content-type': "text/html; charset=utf-8"
-			}
-		}
-
 		const resp = (doc) ?
 			this.createElement(
 				doc_module.default,
@@ -62,16 +72,20 @@ export async function routes(this: Nudol, routes_directory_path: string ) {
 			:
 			this.createElement(element)
 
-		return new Response( this.renderToString(resp), options)
+		return new Response( this.renderToString(resp), {
+			headers: {
+				'Content-type': "text/html; charset=utf-8"
+			}
+		})
 
 	} 
 
 	for(const file of files) {
 
-		const { name, ext } = path.parse(file)
+		const { name, ext } = path.parse(file.name)
 
 		try {
-			const import_path = path.join(process.cwd(), this.routes_path!, file)
+			const import_path = path.join(process.cwd(), file.parentPath, file.name)
 			const module = await import(import_path)
 
 			if (name == "_document") {
@@ -80,7 +94,7 @@ export async function routes(this: Nudol, routes_directory_path: string ) {
 					return ret_response(module.default)
 				})
 			} else {
-				const handler_path = "/" + name.toLowerCase();
+				const handler_path = path.join( "/", name );
 				this.handlers.set(parseRoute(Method.GET, handler_path), async () => {
 					return ret_response(module.default)
 				})
@@ -130,15 +144,15 @@ export function parseRequest(request: Request): Handler {
 
 } 
 
-export function routeValue(handler: Handler,  name: string) {
+export function routeValue(this: Nudol,  name: string) {
 
-	return _.find(handler.variables, { name: name }).value
+	return _.find(this.handler.variables, { name: name }).value
 
 }
 
-export function routeParam(url: URL, name: string): string|null {
+export function routeParam(this: Nudol, name: string): string|null {
 
-	const params = url.searchParams
+	const params = this.url.searchParams
 
 	return params.get(name)
 
