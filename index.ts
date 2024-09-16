@@ -53,7 +53,7 @@ export interface Nudol {
 	routeParam(this: Nudol, name: string): string|null 
 
 	hydrationScript(): any
-	hydrationBuild(): any
+	hydrationBuild(): Promise<any> 
 	
 }
 
@@ -74,7 +74,7 @@ export class Nudol implements Nudol {
 		this.websocket = null; 
 		this.upgrade_function = null;
 		this.temp_dir = false;
-		this.temp_path = "./temp/"
+		this.temp_path = ".temp"
 
 
 	}
@@ -105,11 +105,11 @@ export class Nudol implements Nudol {
 	}
 
 
-	listen() {
+	async listen() {
 		const self = this
 
 		if(this.routes_path) {
-			this.hydrationBuild()
+			await this.hydrationBuild()
 		}
 
 		startInfo( this.hostname,this.port, this.handlers, this.websocket )
@@ -117,7 +117,7 @@ export class Nudol implements Nudol {
 		Bun.serve({
 			port: this.port,
 			hostname: this.hostname,
-			async fetch(req) {
+			async fetch(req: Request ) {
 
 				self.handler = parseRequest(req)
 
@@ -126,11 +126,7 @@ export class Nudol implements Nudol {
 				if((self.handler.parts[1].value).toLowerCase() == self.public_alias) {
 					return new Response(Bun.file(path.join(self.public_path, self.handler.parts[self.handler.parts.length - 1].value ) ))
 				} 
-
-				if((self.handler.parts[1].value).toLowerCase() == path.parse( self.temp_path ).base) {
-					return new Response(Bun.file("." + self.url.pathname))
-				} 
-
+				
 				for(const [key, handler] of self.handlers) {
 
 					let equal = true;
@@ -216,3 +212,4 @@ Nudol.prototype.post = Methods.post;
 
 Nudol.prototype.hydrationScript = Hydration.script;
 Nudol.prototype.hydrationBuild = Hydration.build;
+

@@ -22,55 +22,38 @@ export interface Handler {
 	variables?: PathVariable[],
 }
 
-export async function routes(this: Nudol, routes_directory_path: string ) {
-
-	this.routes_path = routes_directory_path;
-
-	const read_path = path.join( this.routes_path )
-
-	const files = await readdir( this.routes_path, { recursive: true, withFileTypes: true } )
-
-
-	// for( const gg of files ) {
-	//
-	// 	console.log(gg)
-	//
-	// 	if ( gg.isFile() ) {
-	//
-	// 		const rr = path.join(gg.parentPath,  path.parse( gg.name).name )
-	//
-	// 		console.log(rr)
-	//
-	// 	}
-	// }
-	//
-	// return;
-
-	let doc = false 
+async function findDocumentFile( routes_path : any ) {
 	let doc_module = undefined;
+
+	const files = await readdir( routes_path )
+
 
 	for (const file of files) {
 
-		const { name, ext } = path.parse(file.name)
+		const { name, ext } = path.parse(file)
 
 		if(name == "_document") {
 			[".js", ".ts", ".jsx", ".tsx"].includes(ext)
-			doc_module  = await import(path.join(process.cwd(), path.join(this.routes_path!, ("_document" + ext))))
-			doc = true
+			doc_module = await import(path.join(process.cwd(), path.join(routes_path!, ("_document" + ext))))
 		}
 
 	}
 
-	const ret_response = ( element: any ) => {
+	return doc_module
+}
 
-		const resp = (doc) ?
-			this.createElement(
-				doc_module.default,
-				{ hydrationScript: this.hydrationScript.bind(this) },
+
+export async function routes(this: Nudol, routes_directory_path: string ) {
+
+	const ssr_response = ( doc_module: any, element: any ) => {
+		const resp = (doc_module) ?
+				this.createElement(
+					doc_module.default,
+					{ hydrationScript: this.hydrationScript.bind(this) },
+					this.createElement(element)
+				)
+				:
 				this.createElement(element)
-			)
-			:
-			this.createElement(element)
 
 		return new Response( this.renderToString(resp), {
 			headers: {
@@ -80,31 +63,44 @@ export async function routes(this: Nudol, routes_directory_path: string ) {
 
 	} 
 
-	for(const file of files) {
 
-		const { name, ext } = path.parse(file.name)
+	this.routes_path = routes_directory_path;
 
-		try {
-			const import_path = path.join(process.cwd(), file.parentPath, file.name)
-			const module = await import(import_path)
+	const files = await readdir( this.routes_path, { recursive: true, withFileTypes: true } )
 
-			if (name == "_document") {
-			} else if(name == "index") {
-				this.handlers.set(parseRoute(Method.GET, "/"), async () => {
-					return ret_response(module.default)
-				})
-			} else {
-				const handler_path = path.join( "/", name );
-				this.handlers.set(parseRoute(Method.GET, handler_path), async () => {
-					return ret_response(module.default)
-				})
+	const doc_module = await findDocumentFile( this.routes_path )
+
+	for( const file of files ) {
+
+		if ( file.isFile() ) {
+
+			const full_path = path.join(file.parentPath, path.parse( file.name).name )
+
+			const file_path = path.join( ...full_path.split("/").slice(1, full_path.split("/").length ) )
+
+			console.log(file_path)
+			
+			try {
+				const import_path = path.join(process.cwd(), file.parentPath, file.name)
+				const module = await import(import_path)
+
+				if (file.name == "_document") {
+				} else if(file.name == "index") {
+					this.handlers.set(parseRoute(Method.GET, "/"), async () => {
+						return ssr_response(doc_module, module.default)
+					})
+				} else {
+					this.handlers.set(parseRoute(Method.GET, path.join( "/", file_path)), async () => {
+						return ssr_response(doc_module, module.default)
+					})
+				}
+			} catch (error) {
+
+				console.log("Error import file", error)
+
 			}
-		} catch (error) {
-
-			console.log("Error import file", error)
 
 		}
-
 	}
 
 } 
@@ -116,13 +112,13 @@ export function parseRoute(method: string, path: string): Handler {
 
 	let variables: PathVariable[] = []
 
-	for(const [id, part] of path.split("/").entries()) {
+	for(const part of parts) {
 
-		if(part[0] == "{" && part.slice(-1)[0] == "}") {
+		if(part.value[0] == "{" && part.value.slice(-1)[0] == "}") {
 
-			const name = part.slice(1, part.length - 1 )
+			const name = part.value.slice(1, part.length - 1 )
 
-			variables.push({id: id, name: name} as PathVariable)
+			variables.push({id: part.id, name: name} as PathVariable)
 
 		}
 
