@@ -33,7 +33,7 @@ export async function build( this: Nudol ) {
 
 			const full_path = path.join(file.parentPath, file.name )
 
-			const file_path = path.join( ...full_path.split(path.sep).slice(path.join(this.routes_path).split("/").length, full_path.split(path.sep).length ) )
+			const file_path = path.join( ...full_path.split(path.sep).slice(path.join(this.routes_path).split(path.sep).length, full_path.split(path.sep).length ) )
 
 			const component_file = path.join( process.cwd(), this.routes_path!, file_path)
 
