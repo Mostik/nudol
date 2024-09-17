@@ -76,7 +76,7 @@ export async function routes(this: Nudol, routes_directory_path: string ) {
 
 			const full_path = path.join(file.parentPath, path.parse( file.name).name )
 
-			const file_path = path.join( ...full_path.split("/").slice(path.join(this.routes_path).split("/").length, full_path.split("/").length ) )
+			const file_path = path.join( ...full_path.split(path.sep).slice(path.join(this.routes_path).split(path.sep).length, full_path.split(path.sep).length ) )
 
 			try {
 				const import_path = path.join(process.cwd(), file.parentPath, file.name)
@@ -106,9 +106,9 @@ export async function routes(this: Nudol, routes_directory_path: string ) {
 } 
 
 
-export function parseRoute(method: string, path: string): Handler {
+export function parseRoute(method: string, route_path: string): Handler {
 
-	const parts: PathPart[] = path.split("/").map((e, index) => ({ id: index, value: e }))
+	const parts: PathPart[] = route_path.split(path.sep).map((e, index) => ({ id: index, value: e }))
 
 	let variables: PathVariable[] = []
 
@@ -124,7 +124,7 @@ export function parseRoute(method: string, path: string): Handler {
 
 	}
 
-	return { method: method, path: path, parts: parts, variables: variables } as Handler
+	return { method: method, path: route_path, parts: parts, variables: variables } as Handler
 
 }
 
@@ -134,7 +134,7 @@ export function parseRequest(request: Request): Handler {
 
 	const pathname = url.pathname
 
-	const parts: PathPart[] = pathname.split("/").map((e, index) => ({ id: index, value: e }))
+	const parts: PathPart[] = pathname.split(path.sep).map((e, index) => ({ id: index, value: e }))
 
 	return { method: request.method, path: pathname, parts: parts, variables: [] } as Handler
 

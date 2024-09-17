@@ -33,7 +33,7 @@ export async function build( this: Nudol ) {
 
 			const full_path = path.join(file.parentPath, file.name )
 
-			const file_path = path.join( ...full_path.split("/").slice(path.join(this.routes_path).split("/").length, full_path.split("/").length ) )
+			const file_path = path.join( ...full_path.split(path.sep).slice(path.join(this.routes_path).split("/").length, full_path.split(path.sep).length ) )
 
 			const component_file = path.join( process.cwd(), this.routes_path!, file_path)
 
@@ -67,7 +67,7 @@ export async function build( this: Nudol ) {
 		let res_path = path.join( this.temp_path, res.path )
 
 
-		if( res.path.split("/")[0] == this.temp_path ) {
+		if( res.path.split(path.sep)[0] == this.temp_path ) {
 
 			res_path = path.join( res.path ) 
 
@@ -80,7 +80,7 @@ export async function build( this: Nudol ) {
 
 		let route_path = path.join("/", this.temp_path, res.path ) 
 
-		if( res.path.split("/")[0] == this.temp_path ) {
+		if( res.path.split(path.sep)[0] == this.temp_path ) {
 
 			route_path = path.join( "/", res.path ) 
 
@@ -91,7 +91,7 @@ export async function build( this: Nudol ) {
 
 			route_path = path.join("/", this.temp_path, dir, name) 
 
-			if( res.path.split("/")[0] == this.temp_path ) {
+			if( res.path.split(path.sep)[0] == this.temp_path ) {
 
 				route_path = path.join("/", dir, name) 
 
