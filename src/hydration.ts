@@ -31,16 +31,16 @@ export async function build( this: Nudol ) {
 
 		if ( file.isFile() ) {
 
-			const full_path = path.join(file.parentPath, path.parse( file.name).name )
+			const full_path = path.join(file.parentPath, file.name )
 
-			const file_path = path.join( ...full_path.split("/").slice(1, full_path.split("/").length ) )
+			const file_path = path.join( ...full_path.split("/").slice(path.join(this.routes_path).split("/").length, full_path.split("/").length ) )
 
+			const component_file = path.join( process.cwd(), this.routes_path!, file_path)
 
-			const component_file = path.join( process.cwd(), this.routes_path!, file_path + ".tsx")
-			const build_path = path.join( process.cwd(), this.temp_path, file_path ) 
+			const { dir, name } = path.parse( file_path ) 
+
+			const build_path = path.join( process.cwd(), this.temp_path, dir, name ) 
 			const build_file = path.join( build_path + ".tsx" ) 
-
-
 
 			Bun.write(build_file,
 				`
@@ -63,16 +63,39 @@ export async function build( this: Nudol ) {
 
 
 	for (const res of result.outputs) {
-		const res_path =  path.join( this.temp_path, res.path)
-		Bun.write(res_path, res);
 
+		let res_path = path.join( this.temp_path, res.path )
+
+
+		if( res.path.split("/")[0] == this.temp_path ) {
+
+			res_path = path.join( res.path ) 
+
+		}
+
+		Bun.write(res_path, res);
+		
 		const { name, dir, base } = path.parse( res.path )
 
-		let route_path = path.join("/", this.temp_path, dir, base) 
+
+		let route_path = path.join("/", this.temp_path, res.path ) 
+
+		if( res.path.split("/")[0] == this.temp_path ) {
+
+			route_path = path.join( "/", res.path ) 
+
+		}
+
 
 		if(name[0] == "{" && name.slice(-1)[0] == "}") {
 
 			route_path = path.join("/", this.temp_path, dir, name) 
+
+			if( res.path.split("/")[0] == this.temp_path ) {
+
+				route_path = path.join("/", dir, name) 
+
+			}
 
 		}
 

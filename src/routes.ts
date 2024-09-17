@@ -76,14 +76,16 @@ export async function routes(this: Nudol, routes_directory_path: string ) {
 
 			const full_path = path.join(file.parentPath, path.parse( file.name).name )
 
-			const file_path = path.join( ...full_path.split("/").slice(1, full_path.split("/").length ) )
+			const file_path = path.join( ...full_path.split("/").slice(path.join(this.routes_path).split("/").length, full_path.split("/").length ) )
 
 			try {
 				const import_path = path.join(process.cwd(), file.parentPath, file.name)
 				const module = await import(import_path)
 
-				if (file.name == "_document") {
-				} else if(file.name == "index") {
+				const {name} = path.parse( file.name )
+
+				if (name == "_document") {
+				} else if(name == "index") {
 					this.handlers.set(parseRoute(Method.GET, "/"), async () => {
 						return ssr_response(doc_module, module.default)
 					})
@@ -114,7 +116,7 @@ export function parseRoute(method: string, path: string): Handler {
 
 		if(part.value[0] == "{" && part.value.slice(-1)[0] == "}") {
 
-			const name = part.value.slice(1, part.length - 1 )
+			const name = part.value.slice(1, part.value.length - 1 )
 
 			variables.push({id: part.id, name: name} as PathVariable)
 
