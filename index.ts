@@ -124,7 +124,7 @@ export class Nudol implements Nudol {
 				self.url = new URL(req.url)
 
 				if((self.handler.parts[1].value).toLowerCase() == self.public_alias) {
-					return new Response(Bun.file(path.join(self.public_path, self.handler.parts[self.handler.parts.length - 1].value ) ))
+					return new Response(Bun.file(path.join( self.public_path, self.handler.parts[self.handler.parts.length - 1].value ) ))
 				} 
 				
 				for(const [key, handler] of self.handlers) {

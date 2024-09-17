@@ -6,11 +6,7 @@ import { Method } from "./method";
 
 export function script( this: Nudol) {
 
-	console.log("Hello", this.handler )
-
 	let file_path = (this.url!.pathname)?.toLowerCase()
-
-	console.log(file_path)
 	
 	if(this.url!.pathname == "/") {
 
@@ -70,15 +66,21 @@ export async function build( this: Nudol ) {
 		const res_path =  path.join( this.temp_path, res.path)
 		Bun.write(res_path, res);
 
-		console.log(parseRoute( Method.GET, res_path ))
+		const { name, dir, base } = path.parse( res.path )
 
-		this.handlers.set( parseRoute( Method.GET, path.join("/", res_path) ), function () {
+		let route_path = path.join("/", this.temp_path, dir, base) 
+
+		if(name[0] == "{" && name.slice(-1)[0] == "}") {
+
+			route_path = path.join("/", this.temp_path, dir, name) 
+
+		}
+
+		this.handlers.set( parseRoute( Method.GET, route_path  ), function () {
 			return new Response(Bun.file( res_path ))
 		})
 
 	}
-
-	console.log( this.handlers)
 	
 	if(!result.success) {
 		console.log(result.logs)

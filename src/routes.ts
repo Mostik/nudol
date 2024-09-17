@@ -78,8 +78,6 @@ export async function routes(this: Nudol, routes_directory_path: string ) {
 
 			const file_path = path.join( ...full_path.split("/").slice(1, full_path.split("/").length ) )
 
-			console.log(file_path)
-			
 			try {
 				const import_path = path.join(process.cwd(), file.parentPath, file.name)
 				const module = await import(import_path)
