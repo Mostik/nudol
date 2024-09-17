@@ -99,7 +99,7 @@ export async function build( this: Nudol ) {
 
 		}
 
-		this.handlers.set( parseRoute( Method.GET, route_path  ), function () {
+		this.handlers.set( parseRoute( Method.GET, route_path.replaceAll("\\", "/") ), function () {
 			return new Response(Bun.file( res_path ))
 		})
 
