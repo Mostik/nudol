@@ -66,8 +66,7 @@ export async function build( this: Nudol ) {
 
 		let res_path = path.join( this.temp_path, res.path )
 
-
-		if( res.path.split(path.sep)[0] == this.temp_path ) {
+		if( res.path.split("/")[0] == this.temp_path ) {
 
 			res_path = path.join( res.path ) 
 
@@ -77,10 +76,9 @@ export async function build( this: Nudol ) {
 		
 		const { name, dir, base } = path.parse( res.path )
 
-
 		let route_path = path.join("/", this.temp_path, res.path ) 
 
-		if( res.path.split(path.sep)[0] == this.temp_path ) {
+		if( res.path.split("/")[0] == this.temp_path ) {
 
 			route_path = path.join( "/", res.path ) 
 
@@ -91,7 +89,7 @@ export async function build( this: Nudol ) {
 
 			route_path = path.join("/", this.temp_path, dir, name) 
 
-			if( res.path.split(path.sep)[0] == this.temp_path ) {
+			if( res.path.split("/")[0] == this.temp_path ) {
 
 				route_path = path.join("/", dir, name) 
 

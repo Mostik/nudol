@@ -90,7 +90,7 @@ export async function routes(this: Nudol, routes_directory_path: string ) {
 						return ssr_response(doc_module, module.default)
 					})
 				} else {
-					this.handlers.set(parseRoute(Method.GET, path.join( "/", file_path)), async () => {
+					this.handlers.set(parseRoute(Method.GET, path.join( "/", file_path).replaceAll("\\", "/")), async () => {
 						return ssr_response(doc_module, module.default)
 					})
 				}
@@ -108,7 +108,7 @@ export async function routes(this: Nudol, routes_directory_path: string ) {
 
 export function parseRoute(method: string, route_path: string): Handler {
 
-	const parts: PathPart[] = route_path.split(path.sep).map((e, index) => ({ id: index, value: e }))
+	const parts: PathPart[] = route_path.split("/").map((e, index) => ({ id: index, value: e }))
 
 	let variables: PathVariable[] = []
 
@@ -134,7 +134,7 @@ export function parseRequest(request: Request): Handler {
 
 	const pathname = url.pathname
 
-	const parts: PathPart[] = pathname.split(path.sep).map((e, index) => ({ id: index, value: e }))
+	const parts: PathPart[] = pathname.split("/").map((e, index) => ({ id: index, value: e }))
 
 	return { method: request.method, path: pathname, parts: parts, variables: [] } as Handler
 
