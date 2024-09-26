@@ -16,6 +16,7 @@ interface Config {
 	routes?: string,
 	React?: any,
 	ReactDom?: any,
+	production?: boolean,
 }
 
 interface WebSocket {
@@ -40,6 +41,8 @@ export interface Nudol {
 	upgrade_function: (( server: Server, request: Request) => Promise<boolean>) | null;
 	temp_dir: boolean; 
 	temp_path: string; 
+
+	production: boolean;
 
 	createElement: any
 	renderToString: any
@@ -74,8 +77,8 @@ export class Nudol implements Nudol {
 		this.websocket = null; 
 		this.upgrade_function = null;
 		this.temp_dir = false;
-		this.temp_path = ".temp"
-
+		this.temp_path = ".temp";
+		this.production = config.production || false;
 
 	}
 	

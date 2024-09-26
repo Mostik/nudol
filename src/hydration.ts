@@ -59,6 +59,7 @@ export async function build( this: Nudol ) {
 	const result = await Bun.build({
 		entrypoints: entrypoints,
 		format: "esm",
+		minify: this.production, 
 	});
 
 
