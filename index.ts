@@ -42,6 +42,8 @@ export interface Nudol {
 	temp_dir: boolean; 
 	temp_path: string; 
 
+	static_routes: any;
+
 	production: boolean;
 
 	createElement: any
@@ -78,6 +80,7 @@ export class Nudol implements Nudol {
 		this.upgrade_function = null;
 		this.temp_dir = false;
 		this.temp_path = ".temp";
+		this.static_routes = {};
 		this.production = config.production || false;
 
 	}
@@ -111,15 +114,12 @@ export class Nudol implements Nudol {
 	async listen() {
 		const self = this
 
-		if(this.routes_path) {
-			await this.hydrationBuild()
-		}
-
 		startInfo( this.hostname,this.port, this.handlers, this.websocket )
 
 		Bun.serve({
 			port: this.port,
 			hostname: this.hostname,
+			static: this.static_routes,
 			async fetch(req: Request ) {
 
 				self.handler = parseRequest(req)

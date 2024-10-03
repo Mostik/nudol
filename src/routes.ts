@@ -3,6 +3,7 @@ import _ from "lodash"
 import { readdir, mkdir, exists } from "node:fs/promises";
 import path from "node:path" 
 import { Method } from "./method.ts";
+import os from "node:os"
 
 export interface PathPart {
 	id: number,
@@ -20,6 +21,7 @@ export interface Handler {
 	path: string,
 	parts: PathPart[],
 	variables?: PathVariable[],
+	hydrationpath?: string,
 }
 
 async function findDocumentFile( routes_path : any ) {
@@ -43,13 +45,13 @@ async function findDocumentFile( routes_path : any ) {
 }
 
 
-export async function routes(this: Nudol, routes_directory_path: string ) {
+export async function routes(this: Nudol, routes_directory_path: string, hydrationpath: string|null = null ) {
 
-	const ssr_response = ( doc_module: any, element: any ) => {
+	const ssr_response = ( doc_module: any, element: any, hydrationpath: string|null ) => {
 		const resp = (doc_module) ?
 				this.createElement(
 					doc_module.default,
-					{ hydrationScript: this.hydrationScript.bind(this) },
+					{ hydrationScript: this.hydrationScript.bind(this), hydrationpath: hydrationpath  },
 					this.createElement(element)
 				)
 				:
@@ -62,6 +64,10 @@ export async function routes(this: Nudol, routes_directory_path: string ) {
 		})
 
 	} 
+
+	if(!(await exists( path.join( process.cwd(), this.temp_path)))) {
+		await mkdir( path.join( process.cwd(), this.temp_path) )
+	}
 
 
 	this.routes_path = routes_directory_path;
@@ -78,6 +84,38 @@ export async function routes(this: Nudol, routes_directory_path: string ) {
 
 			const file_path = path.join( ...full_path.split(path.sep).slice(path.join(this.routes_path).split(path.sep).length, full_path.split(path.sep).length ) )
 
+			const component_file = path.join( process.cwd(), this.routes_path!, file_path)
+
+			const { dir, name } = path.parse( file_path ) 
+
+			const build_path = path.join( process.cwd(), this.temp_path, dir, name ) 
+			const build_file = path.join( build_path + ".tsx" ) 
+
+			await Bun.write( Bun.file( build_file ),
+				`
+					import { hydrateRoot } from "react-dom/client"\n
+					import HydrationComponent from "${component_file}"\n
+					hydrateRoot(document.getElementById('root'), <HydrationComponent></HydrationComponent>)\n
+				`
+			)
+
+			const result = await Bun.build({
+				entrypoints: [ build_file ],
+				format: "esm",
+				minify: this.production, 
+				naming: '[hash].[ext]',
+			});
+
+			const static_path = path.join("/", this.temp_path, result.outputs[0].path )
+
+
+			this.static_routes[ static_path ] = new Response( result.outputs[0], { headers: { "Content-Type" : "text/javascript;charset=utf-8" }} )
+
+			if(!result.success) {
+				console.log(result.logs)
+				throw new Error("client error")
+			} 
+
 			try {
 				const import_path = path.join(process.cwd(), file.parentPath, file.name)
 				const module = await import(import_path)
@@ -86,12 +124,12 @@ export async function routes(this: Nudol, routes_directory_path: string ) {
 
 				if (name == "_document") {
 				} else if(name == "index") {
-					this.handlers.set(parseRoute(Method.GET, "/"), async () => {
-						return ssr_response(doc_module, module.default)
+					this.handlers.set(parseRoute(Method.GET, "/", static_path), async () => {
+						return ssr_response(doc_module, module.default, static_path)
 					})
 				} else {
-					this.handlers.set(parseRoute(Method.GET, path.join( "/", file_path).replaceAll("\\", "/")), async () => {
-						return ssr_response(doc_module, module.default)
+					this.handlers.set(parseRoute(Method.GET, path.join( "/", file_path).replaceAll("\\", "/"), static_path), async () => {
+						return ssr_response(doc_module, module.default, static_path)
 					})
 				}
 			} catch (error) {
@@ -106,7 +144,7 @@ export async function routes(this: Nudol, routes_directory_path: string ) {
 } 
 
 
-export function parseRoute(method: string, route_path: string): Handler {
+export function parseRoute( method: string, route_path: string, hydratioinpath: string|null = null ): Handler {
 
 	const parts: PathPart[] = route_path.split("/").map((e, index) => ({ id: index, value: e }))
 
@@ -124,7 +162,7 @@ export function parseRoute(method: string, route_path: string): Handler {
 
 	}
 
-	return { method: method, path: route_path, parts: parts, variables: variables } as Handler
+	return { method: method, path: route_path, parts: parts, variables: variables, hydratioinpath: hydratioinpath } as Handler
 
 }
 
