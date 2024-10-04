@@ -3,7 +3,6 @@ import _ from "lodash"
 import { readdir, mkdir, exists } from "node:fs/promises";
 import path from "node:path" 
 import { Method } from "./method.ts";
-import os from "node:os"
 
 export interface PathPart {
 	id: number,

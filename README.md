@@ -4,7 +4,7 @@
  Focus on debugging this library rather than debugging your own application.
 ## Quick Start
 ```
-bun add nudol
+bun add @nudol/core
 ```
 ## Features
 * Fragile routing 
@@ -19,7 +19,7 @@ bun add nudol
 
 ## Example
 ```js
-import { Nudol } from "nudol"
+import { Nudol } from "@nudol/core"
 import React from "react"
 import ReactDom from "react-dom/server"
 
