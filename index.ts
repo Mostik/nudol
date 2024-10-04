@@ -51,13 +51,12 @@ export interface Nudol {
 
 	get( path: string, fn: (request: Request) => void ): void 
 	post( path: string, fn: (request: Request) => void ): void 
-	routes( routes_directory_path: string ): Promise<void>
-
+	routes( routes_directory_path: string, params?: { headers: any } ): Promise<void>
 
 	routeValue(this: Nudol, name: string): any 
 	routeParam(this: Nudol, name: string): string|null 
 
-	hydrationScript(): any
+	hydrationScript( hydrationpath: string ): any
 	hydrationBuild(): Promise<any> 
 	
 }
@@ -216,5 +215,3 @@ Nudol.prototype.get = Methods.get;
 Nudol.prototype.post = Methods.post;
 
 Nudol.prototype.hydrationScript = Hydration.script;
-Nudol.prototype.hydrationBuild = Hydration.build;
-

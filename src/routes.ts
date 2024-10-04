@@ -45,9 +45,10 @@ async function findDocumentFile( routes_path : any ) {
 }
 
 
-export async function routes(this: Nudol, routes_directory_path: string, hydrationpath: string|null = null ) {
+export async function routes(this: Nudol, routes_directory_path: string, params: { headers: any } = { headers: {} } ) {
 
 	const ssr_response = ( doc_module: any, element: any, hydrationpath: string|null ) => {
+
 		const resp = (doc_module) ?
 				this.createElement(
 					doc_module.default,
@@ -59,7 +60,7 @@ export async function routes(this: Nudol, routes_directory_path: string, hydrati
 
 		return new Response( this.renderToString(resp), {
 			headers: {
-				'Content-type': "text/html; charset=utf-8"
+				'Content-Type': "text/html; charset=utf-8",
 			}
 		})
 
@@ -109,7 +110,12 @@ export async function routes(this: Nudol, routes_directory_path: string, hydrati
 			const static_path = path.join("/", this.temp_path, result.outputs[0].path )
 
 
-			this.static_routes[ static_path ] = new Response( result.outputs[0], { headers: { "Content-Type" : "text/javascript;charset=utf-8" }} )
+			this.static_routes[ static_path ] = new Response( result.outputs[0], { 
+				headers: { 
+					"Content-Type" : "text/javascript;charset=utf-8", 
+					...params.headers
+				}
+			} )
 
 			if(!result.success) {
 				console.log(result.logs)
