@@ -106,8 +106,12 @@ export async function routes(this: Nudol, routes_directory_path: string, params:
 				naming: '[hash].[ext]',
 			});
 
-			const static_path = path.join("/", this.temp_path, result.outputs[0].path )
+			if(!result.success) {
+				console.log(result.logs)
+				throw new Error("client error")
+			} 
 
+			const static_path = path.join("/", this.temp_path, result.outputs[0].path )
 
 			this.static_routes[ static_path ] = new Response( result.outputs[0], { 
 				headers: { 
@@ -115,11 +119,6 @@ export async function routes(this: Nudol, routes_directory_path: string, params:
 					...params.headers
 				}
 			} )
-
-			if(!result.success) {
-				console.log(result.logs)
-				throw new Error("client error")
-			} 
 
 			try {
 				const import_path = path.join(process.cwd(), file.parentPath, file.name)
