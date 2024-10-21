@@ -111,7 +111,7 @@ export async function routes(this: Nudol, routes_directory_path: string, params:
 				throw new Error("client error")
 			} 
 
-			const static_path = path.join("/", this.temp_path, result.outputs[0].path )
+			const static_path = path.join("/", this.temp_path, result.outputs[0].path ).replaceAll("\\", "/")
 
 			this.static_routes[ static_path ] = new Response( result.outputs[0], { 
 				headers: { 
@@ -148,7 +148,7 @@ export async function routes(this: Nudol, routes_directory_path: string, params:
 } 
 
 
-export function parseRoute( method: string, route_path: string, hydratioinpath: string|null = null ): Handler {
+export function parseRoute( method: string, route_path: string, hydrationpath: string|null = null ): Handler {
 
 	const parts: PathPart[] = route_path.split("/").map((e, index) => ({ id: index, value: e }))
 
@@ -166,7 +166,7 @@ export function parseRoute( method: string, route_path: string, hydratioinpath: 
 
 	}
 
-	return { method: method, path: route_path, parts: parts, variables: variables, hydratioinpath: hydratioinpath } as Handler
+	return { method: method, path: route_path, parts: parts, variables: variables, hydrationpath: hydrationpath } as Handler
 
 }
 
