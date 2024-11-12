@@ -19,10 +19,14 @@ interface Config {
 	React?: any,
 	ReactDom?: any,
 	production?: boolean,
+
+	key?: string,
+	cert?: string,
 }
 
 interface WebSocket {
 	path: "/ws",
+	idleTimeout: number,
 	onopen: (ws:any) => any,
 	onmessage: (ws:any, message: any) => any,
 	onclose: (ws:any, code: any) => any,
@@ -43,6 +47,9 @@ export interface Nudol {
 	upgrade_function: (( server: Server, request: Request) => Promise<boolean>) | null;
 	temp_dir: boolean; 
 	temp_path: string; 
+
+	key?: string;
+	cert?: string;
 
 	static_routes: any;
 
@@ -84,6 +91,10 @@ export class Nudol implements Nudol {
 		this.static_routes = {};
 		this.production = config.production || false;
 
+
+		this.key = config.key;
+		this.cert = config.cert;
+
 	}
 	
 	ws( ws: WebSocket ) {
@@ -121,6 +132,8 @@ export class Nudol implements Nudol {
 			port: this.port,
 			hostname: this.hostname,
 			static: this.static_routes,
+			keyFile: this.key,
+			certFile: this.cert,
 			async fetch(req: Request ) {
 
 				self.handler = parseRequest(req)
@@ -194,6 +207,7 @@ export class Nudol implements Nudol {
 				return new Response("404 Not found", { status: 404 });
 			},
 			websocket: {
+				idleTimeout: self.websocket?.idleTimeout,
 				async open(ws) {
 					self.websocket!.onopen(ws)
 				},

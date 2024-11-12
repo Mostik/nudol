@@ -1,6 +1,6 @@
 {
   "name": "@nudol/core",
-  "version": "0.0.9",
+  "version": "0.0.12",
   "module": "index.ts",
   "type": "module",
   "devDependencies": {
