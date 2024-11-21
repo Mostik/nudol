@@ -1,7 +1,7 @@
 import path from "node:path" 
 import _ from "lodash"
 
-import { parseRoute, parseRequest, routes, routeValue, routeParam } from "./src/routes";
+import { parseRoute, parseRequest, routes, routeValue, routeParam, type RoutesParams } from "./src/routes";
 import { Method } from "./src/method.ts"
 import { startInfo } from "./src/utils.ts";
 
@@ -16,8 +16,6 @@ interface Config {
 	hostname?: string,
 	public?: string,
 	routes?: string,
-	React?: any,
-	ReactDom?: any,
 	production?: boolean,
 
 	key?: string,
@@ -60,7 +58,7 @@ export interface Nudol {
 
 	get( path: string, fn: (request: Request) => void ): void 
 	post( path: string, fn: (request: Request) => void ): void 
-	routes( routes_directory_path: string, params?: { headers: any } ): Promise<void>
+	routes( routes_directory_path: string, params?: RoutesParams ): Promise<void>
 
 	routeValue(this: Nudol, name: string): any 
 	routeParam(this: Nudol, name: string): string|null 
@@ -81,8 +79,6 @@ export class Nudol implements Nudol {
 		this.public_path = config.public || null;
 		this.public_alias = null;
 		this.routes_path = null;
-		this.createElement = config.React.createElement;
-		this.renderToString = config.ReactDom.renderToString;
 		this.handler = null;
 		this.websocket = null; 
 		this.upgrade_function = null;

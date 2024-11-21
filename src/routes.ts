@@ -43,8 +43,17 @@ async function findDocumentFile( routes_path : any ) {
 	return doc_module
 }
 
+export interface RoutesParams {
+	headers?: any,
+	React: any,
+	ReactDom: any,
+}
 
-export async function routes(this: Nudol, routes_directory_path: string, params: { headers: any } = { headers: {} } ) {
+export async function routes(this: Nudol, routes_directory_path: string, params: RoutesParams ) {
+
+	this.createElement = params.React.createElement;
+	this.renderToString = params.ReactDom.renderToString;
+
 
 	const ssr_response = ( doc_module: any, element: any, hydrationpath: string|null ) => {
 
