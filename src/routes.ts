@@ -55,18 +55,41 @@ export async function routes(this: Nudol, routes_directory_path: string, params:
 	this.renderToString = params.ReactDom.renderToString;
 
 
-	const ssr_response = ( doc_module: any, element: any, hydrationpath: string|null ) => {
+	const ssr_response = ( doc_module: any, module: any, hydrationpath: string|null ) => {
 
-		const resp = (doc_module) ?
-				this.createElement(
+		console.log( module.loadData() )
+
+		let result = undefined;
+
+		if( module.loadData ) {
+
+			if( doc_module ) {
+				result = this.createElement(
 					doc_module.default,
 					{ hydrationScript: this.hydrationScript.bind(this), hydrationpath: hydrationpath  },
-					this.createElement(element)
+					this.createElement( module.default, { name: "hello", text: "ahahah" })
 				)
-				:
-				this.createElement(element)
 
-		return new Response( this.renderToString(resp), {
+			} else {
+				result = this.createElement( module.default, { name: "hello", text: "amir" } )
+			}
+
+		} else {
+
+			if( doc_module ) {
+				result = this.createElement(
+					doc_module.default,
+					{ hydrationScript: this.hydrationScript.bind(this), hydrationpath: hydrationpath  },
+					this.createElement( module.default )
+				)
+
+			} else {
+				result = this.createElement( module.default )
+			}
+
+		}
+
+		return new Response( this.renderToString(result), {
 			headers: {
 				'Content-Type': "text/html; charset=utf-8",
 			}
@@ -137,12 +160,17 @@ export async function routes(this: Nudol, routes_directory_path: string, params:
 
 				if (name == "_document") {
 				} else if(name == "index") {
+
+					if( module.loadData ) {
+						console.log("Phahahha Hello world")
+					}
+
 					this.handlers.set(parseRoute(Method.GET, "/", static_path), async () => {
-						return ssr_response(doc_module, module.default, static_path)
+						return ssr_response(doc_module, module, static_path)
 					})
 				} else {
 					this.handlers.set(parseRoute(Method.GET, path.join( "/", file_path).replaceAll("\\", "/"), static_path), async () => {
-						return ssr_response(doc_module, module.default, static_path)
+						return ssr_response(doc_module, module, static_path)
 					})
 				}
 			} catch (error) {

@@ -14,8 +14,6 @@ import * as Methods from "./src/method.ts"
 interface Config {
 	port: string,
 	hostname?: string,
-	public?: string,
-	routes?: string,
 	production?: boolean,
 
 	key?: string,
@@ -32,7 +30,6 @@ interface WebSocket {
 
 export interface Nudol {
 
-
 	port: string;
 	hostname: string;
 	url?: URL;
@@ -42,188 +39,204 @@ export interface Nudol {
 	public_alias: string|null;
 	routes_path: string|null;
 	websocket: WebSocket | null;
-	upgrade_function: (( server: Server, request: Request) => Promise<boolean>) | null;
 	temp_dir: boolean; 
 	temp_path: string; 
-
-	key?: string;
-	cert?: string;
-
 	static_routes: any;
 
 	production: boolean;
+	key?: string;
+	cert?: string;
 
-	createElement: any
-	renderToString: any
+	// createElement: any
+	// renderToString: any
 
-	get( path: string, fn: (request: Request) => void ): void 
-	post( path: string, fn: (request: Request) => void ): void 
-	routes( routes_directory_path: string, params?: RoutesParams ): Promise<void>
+	get:  ( this: Nudol, path: string, fn: (request: Request) => void  ) => void, 
+	post: ( this: Nudol, path: string, fn: (request: Request) => void ) => void, 
 
-	routeValue(this: Nudol, name: string): any 
-	routeParam(this: Nudol, name: string): string|null 
+	ws: ( ws: WebSocket ) => void;
 
-	hydrationScript( hydrationpath: string ): any
-	hydrationBuild(): Promise<any> 
+	upgrade_function: (( server: Server, request: Request) => Promise<boolean>) | null;
+	upgrade: ( fn: ( server: Server, request: Request) => Promise<boolean> ) => void;
+
+	notfound: ( methods: Method[] , fn: (request: Request) => void ) => void;
+	public: ( path: string, alias: string ) => void;
+
+
+	listen(): void,
+
+	// routes( routes_directory_path: string, params?: RoutesParams ): Promise<void>
+	//
+	// routeValue(this: Nudol, name: string): any 
+	// routeParam(this: Nudol, name: string): string|null 
+	//
+	// hydrationScript( hydrationpath: string ): any
+	// hydrationBuild(): Promise<any> 
+	//
+	// ws( ws: WebSocket): void
 	
 }
 
-export class Nudol implements Nudol {
+export function Nudol( config: Config ): Nudol {
 
-	constructor(config: Config) {
+	var instance: Nudol = { 
+		port: config.port,
+		hostname: config.hostname || "0.0.0.0",
+		url: undefined,
+		handlers: new Map([]),
+		handler: null,
+		public_path: null,
+		public_alias: null,
+		routes_path: null,
+		websocket: null, 
+		temp_dir: false,
+		temp_path: ".temp",
+		static_routes: {},
+		
+		production: config.production || false,
+		key: config.key,
+		cert: config.cert,
 
-		this.port = config.port;
-		this.hostname = config.hostname || "0.0.0.0",
-		this.handlers = new Map([])
-		//FIXME: config.public to config.public.(path, alias)  
-		this.public_path = config.public || null;
-		this.public_alias = null;
-		this.routes_path = null;
-		this.handler = null;
-		this.websocket = null; 
-		this.upgrade_function = null;
-		this.temp_dir = false;
-		this.temp_path = ".temp";
-		this.static_routes = {};
-		this.production = config.production || false;
+		upgrade_function: null,
 
+		ws: ws, 
+		get: Methods.get,
+		post: Methods.post,
 
-		this.key = config.key;
-		this.cert = config.cert;
+		upgrade: function( fn: ( server: Server, request: Request ) => Promise<boolean> ) {
+			this.upgrade_function = fn
+		},
+
+		notfound: function ( methods: Method[] , fn: (request: Request) => void ) {
+
+			for(let method of methods) {
+				this.handlers.set(parseRoute(method, "404"), fn)
+			}
+
+		},
+		public: function ( path: string, alias: string = "public" ) {
+
+			this.public_path = path;
+			this.public_alias = alias;
+
+		},
+
+		listen: listen 
+
 
 	}
-	
-	ws( ws: WebSocket ) {
 
-		this.websocket = ws;
+	return instance
 
-	}
-
-	upgrade( fn: ( server: Server, request: Request ) => Promise<boolean> ) {
-		this.upgrade_function = fn
-	}
-
-	notfound( methods: Method[] , fn: (request: Request) => void ) {
-
-		for(let method of methods) {
-			this.handlers.set(parseRoute(method, "404"), fn)
-		}
-
-	}
-
-	public( path: string, alias: string = "public" ) {
-
-		this.public_path = path;
-		this.public_alias = alias;
-
-	}
+}
 
 
-	async listen() {
-		const self = this
+function ws( this: Nudol, ws: WebSocket ) {
+	this.websocket = ws
+}
 
-		startInfo( this.hostname,this.port, this.handlers, this.websocket )
 
-		Bun.serve({
-			port: this.port,
-			hostname: this.hostname,
-			static: this.static_routes,
-			keyFile: this.key,
-			certFile: this.cert,
-			async fetch(req: Request ) {
 
-				self.handler = parseRequest(req)
+async function listen( this: Nudol ) {
+	const self = this
 
-				self.url = new URL(req.url)
+	startInfo( this.hostname,this.port, this.handlers, this.websocket )
 
-				if(self.handler.parts.length > 1) {
-					if((self.handler.parts[1].value).toLowerCase() == self.public_alias) {
-						return new Response(Bun.file(path.join( self.public_path, self.handler.parts[self.handler.parts.length - 1].value ) ))
-					} 
-				}
-				
-				for(const [key, handler] of self.handlers) {
+	Bun.serve({
+		port: this.port,
+		hostname: this.hostname,
+		static: this.static_routes,
+		keyFile: this.key,
+		certFile: this.cert,
+		async fetch( req: Request ) {
 
-					let equal = true;
+			self.handler = parseRequest(req)
 
-					if(self.handler.parts.length != key.parts.length) continue; 
+			self.url = new URL(req.url)
 
-					for(const [id, part] of self.handler.parts.entries()) {
+			if(self.handler.parts.length > 1) {
+				if((self.handler.parts[1].value).toLowerCase() == self.public_alias) {
+					return new Response(Bun.file(path.join( self.public_path, self.handler.parts[self.handler.parts.length - 1].value ) ))
+				} 
+			}
 
-						const find = _.find(key.variables, function(k: any) {
-							return k.id == part.id && part.value != "" 
-						})
+			console.log( self.handlers )
+			
+			for(const [key, handler] of self.handlers) {
 
-						if(find) {
+				let equal = true;
 
-							self.handler?.variables?.push({ id: find.id, name: find.name, value: part.value})
+				if(self.handler?.method != key.method ) continue;
 
-						} else {
-							if(part.value != key.parts[id].value) {
-								equal = false
-								break;
-							}
-						}
+				if(self.handler.parts.length != key.parts.length) continue; 
 
-					}
+				for(const [id, part] of self.handler.parts.entries()) {
 
-					if(equal == false) continue;
+					const find = _.find(key.variables, function(k: any) {
+						return k.id == part.id && part.value != "" 
+					})
 
-					return handler(req)
+					if(find) {
 
-				}
+						self.handler?.variables?.push({ id: find.id, name: find.name, value: part.value})
 
-				for( const [key, handle] of self.handlers.entries()) {
-					if(_.find([key], { method: req.method, path: "404"})) {
-						return handle(req)
-					}
-				}
-
-				if(self.websocket != null) {
-					if(self.websocket.path == self.url.pathname) {
-						if(self.upgrade_function) {
-							const success = await self.upgrade_function( this, req )
-
-							if (success) {
-								return undefined;
-							}
-
-						} else {
-
-							const success = this.upgrade(req);
-
-							if (success) {
-							  return undefined;
-							}
-
+					} else {
+						if(part.value != key.parts[id].value) {
+							equal = false
+							break;
 						}
 					}
+
 				}
 
-				return new Response("404 Not found", { status: 404 });
-			},
-			websocket: {
-				idleTimeout: self.websocket?.idleTimeout,
-				async open(ws) {
-					self.websocket!.onopen(ws)
-				},
-				async message(ws, message) {
-					self.websocket!.onmessage(ws, message)
-				},
-				async close(ws, code) {
-					self.websocket!.onclose(ws, code)
+				if(equal == false) continue;
+
+				return handler(req)
+
+			}
+
+			for( const [key, handle] of self.handlers.entries() ) {
+				if(_.find([key], { method: req.method, path: "404"})) {
+					return handle(req)
 				}
 			}
-		});
 
-	}
+			if(self.websocket != null) {
+				if(self.websocket.path == self.url.pathname) {
+					if(self.upgrade_function) {
+						const success = await self.upgrade_function( this, req )
+
+						if (success) {
+							return undefined;
+						}
+
+					} else {
+
+						const success = this.upgrade(req);
+
+						if (success) {
+						  return undefined;
+						}
+
+					}
+				}
+			}
+
+			return new Response("404 Not found", { status: 404 } );
+		},
+		websocket: {
+			idleTimeout: self.websocket?.idleTimeout,
+			async open(ws) {
+				self.websocket!.onopen(ws)
+			},
+			async message(ws, message) {
+				self.websocket!.onmessage(ws, message)
+			},
+			async close(ws, code) {
+				self.websocket!.onclose(ws, code)
+			}
+		}
+	});
+
 }
 
-Nudol.prototype.routes = routes;
-Nudol.prototype.routeValue = routeValue;
-Nudol.prototype.routeParam = routeParam;
 
-Nudol.prototype.get = Methods.get;
-Nudol.prototype.post = Methods.post;
-
-Nudol.prototype.hydrationScript = Hydration.script;
