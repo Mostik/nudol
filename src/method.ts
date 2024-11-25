@@ -1,5 +1,5 @@
 import type { Nudol } from ".."
-import { parseRoute } from "./routes"
+import { generateRoute } from "./routes"
 
 export enum Method {
 	CONNECT = 'CONNECT',
@@ -15,13 +15,13 @@ export enum Method {
 
 export function get( this: Nudol, path: string, fn: (request: Request) => void ) {
 
-	this.handlers.set(parseRoute(Method.GET, path), fn)
+	this.handlers.set(generateRoute(Method.GET, path), fn)
 
 }
 
 export function post( this: Nudol, path: string, fn: (request: Request) => void ) {
 
-	this.handlers.set(parseRoute(Method.POST, path), fn)
+	this.handlers.set(generateRoute(Method.POST, path), fn)
 
 }
 

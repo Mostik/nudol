@@ -1,5 +1,6 @@
 import { Nudol } from "../index.ts"
 import { expect, test } from "bun:test";
+import { Method } from "../src/method.ts";
 
 test("init", () => {
 
@@ -82,6 +83,25 @@ test("regexp", async () => {
 	expect(await (await fetch("http://127.0.0.1:11233/email")).text()).toBe("404 Not found")
 	expect(await (await fetch("http://127.0.0.1:11233/hahah/eoeoe/d02n")).text()).toBe("404 Not found")
 	expect(await (await fetch("http://127.0.0.1:11233/ha/d/d/hah/eoeoe/d02n")).text()).toBe("404 Not found")
+
+});
+
+
+test("notfound", async () => {
+
+	const nudol = Nudol( { port: "11234", hostname: "127.0.0.1" } )
+
+	nudol.notfound( [ Method.GET ], function () {
+		return new Response("My not found")
+	})
+
+	nudol.listen()
+
+	expect(await (await fetch("http://127.0.0.1:11234/get", { method: "GET" })).text()).toBe("My not found")
+	expect(await (await fetch("http://127.0.0.1:11234/post", { method: "POST" })).text()).toBe("404 Not found")
+
+	nudol.server!.stop();
+	
 
 });
 

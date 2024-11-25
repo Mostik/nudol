@@ -1,13 +1,11 @@
-import path from "node:path" 
 import _ from "lodash"
 
-import { parseRoute, parseRequest, routes, routeValue, routeParam, type RoutesParams, type Handler } from "./src/routes";
+import { generateRoute, type Handler } from "./src/routes";
 import { startInfo } from "./src/utils.ts";
 
 import { type Server } from "bun"
 import { Method } from "./src/method.ts"
 
-import * as Hydration from "./src/hydration.ts"
 import * as Methods from "./src/method.ts"
 
 interface Config {
@@ -62,7 +60,6 @@ export interface Nudol {
 	notfound: ( methods: Method[] , fn: (request: Request) => void ) => void;
 	public: ( path: string, alias: string ) => void;
 
-
 	listen(): void,
 
 	// routes( routes_directory_path: string, params?: RoutesParams ): Promise<void>
@@ -112,7 +109,7 @@ export function Nudol( config: Config ): Nudol {
 		notfound: function ( methods: Method[] , fn: (request: Request) => void ) {
 
 			for(let method of methods) {
-				this.handlers.set(parseRoute(method, "404"), fn)
+				this.handlers.set(generateRoute(method, "404"), fn)
 			}
 
 		},
@@ -165,6 +162,14 @@ async function listen( this: Nudol ) {
 					return handler_function( req )
 
 				}
+
+			}
+
+			const notfound = [...self.handlers ].find(( [k, _] ) => (k.path == "404" && k.method == req.method) )
+
+			if( notfound ) {
+
+				return notfound[1]( req )
 
 			}
 
