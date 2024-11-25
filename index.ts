@@ -1,12 +1,11 @@
 import path from "node:path" 
 import _ from "lodash"
 
-import { parseRoute, parseRequest, routes, routeValue, routeParam, type RoutesParams } from "./src/routes";
-import { Method } from "./src/method.ts"
+import { parseRoute, parseRequest, routes, routeValue, routeParam, type RoutesParams, type Handler } from "./src/routes";
 import { startInfo } from "./src/utils.ts";
 
-import { type Handler } from "./src/routes";
 import { type Server } from "bun"
+import { Method } from "./src/method.ts"
 
 import * as Hydration from "./src/hydration.ts"
 import * as Methods from "./src/method.ts"
@@ -46,6 +45,8 @@ export interface Nudol {
 	production: boolean;
 	key?: string;
 	cert?: string;
+
+	server: Server | undefined;
 
 	// createElement: any
 	// renderToString: any
@@ -91,6 +92,8 @@ export function Nudol( config: Config ): Nudol {
 		temp_dir: false,
 		temp_path: ".temp",
 		static_routes: {},
+
+		server: undefined,
 		
 		production: config.production || false,
 		key: config.key,
@@ -113,6 +116,7 @@ export function Nudol( config: Config ): Nudol {
 			}
 
 		},
+
 		public: function ( path: string, alias: string = "public" ) {
 
 			this.public_path = path;
@@ -121,7 +125,6 @@ export function Nudol( config: Config ): Nudol {
 		},
 
 		listen: listen 
-
 
 	}
 
@@ -134,92 +137,63 @@ function ws( this: Nudol, ws: WebSocket ) {
 	this.websocket = ws
 }
 
-
-
 async function listen( this: Nudol ) {
 	const self = this
 
-	startInfo( this.hostname,this.port, this.handlers, this.websocket )
+	// startInfo( this.hostname,this.port, this.handlers, this.websocket )
 
-	Bun.serve({
+	this.server = Bun.serve({
+
 		port: this.port,
 		hostname: this.hostname,
 		static: this.static_routes,
 		keyFile: this.key,
 		certFile: this.cert,
+
 		async fetch( req: Request ) {
 
-			self.handler = parseRequest(req)
-
 			self.url = new URL(req.url)
-
-			if(self.handler.parts.length > 1) {
-				if((self.handler.parts[1].value).toLowerCase() == self.public_alias) {
-					return new Response(Bun.file(path.join( self.public_path, self.handler.parts[self.handler.parts.length - 1].value ) ))
-				} 
-			}
-
-			console.log( self.handlers )
 			
-			for(const [key, handler] of self.handlers) {
+			for(const [handler, handler_function] of self.handlers) {
 
-				let equal = true;
+				let check = self.url.pathname.match( handler.regexp ) 
 
-				if(self.handler?.method != key.method ) continue;
+				if( check ) {
 
-				if(self.handler.parts.length != key.parts.length) continue; 
+					self.handler = { ...handler, params: check.groups } as Handler
 
-				for(const [id, part] of self.handler.parts.entries()) {
-
-					const find = _.find(key.variables, function(k: any) {
-						return k.id == part.id && part.value != "" 
-					})
-
-					if(find) {
-
-						self.handler?.variables?.push({ id: find.id, name: find.name, value: part.value})
-
-					} else {
-						if(part.value != key.parts[id].value) {
-							equal = false
-							break;
-						}
-					}
+					return handler_function( req )
 
 				}
 
-				if(equal == false) continue;
-
-				return handler(req)
-
 			}
 
-			for( const [key, handle] of self.handlers.entries() ) {
-				if(_.find([key], { method: req.method, path: "404"})) {
-					return handle(req)
-				}
-			}
+			// for( const [key, handle] of self.handlers.entries() ) {
+			// 	if(_.find([key], { method: req.method, path: "404"})) {
+			// 		return handle(req)
+			// 	}
+			// }
 
-			if(self.websocket != null) {
-				if(self.websocket.path == self.url.pathname) {
-					if(self.upgrade_function) {
-						const success = await self.upgrade_function( this, req )
-
-						if (success) {
-							return undefined;
-						}
-
-					} else {
-
-						const success = this.upgrade(req);
-
-						if (success) {
-						  return undefined;
-						}
-
-					}
-				}
-			}
+			// if(self.websocket != null) {
+			// 	if(self.websocket.path == self.url.pathname) {
+			// 		if(self.upgrade_function) {
+			// 			const success = await self.upgrade_function( this, req )
+			//
+			// 			if (success) {
+			// 				return undefined;
+			// 			}
+			//
+			// 		} else {
+			//
+			// 			const success = this.upgrade(req);
+			//
+			// 			if (success) {
+			// 			  return undefined;
+			// 			}
+			//
+			// 		}
+			// 	}
+			// }
 
 			return new Response("404 Not found", { status: 404 } );
 		},

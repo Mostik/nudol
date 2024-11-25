@@ -4,22 +4,11 @@ import { readdir, mkdir, exists } from "node:fs/promises";
 import path from "node:path" 
 import { Method } from "./method.ts";
 
-export interface PathPart {
-	id: number,
-	value: string,
-}
-
-export interface PathVariable {
-	id: number,
-	name: string,
-	value?: string,
-}
-
 export interface Handler {
 	method: string,
 	path: string,
-	parts: PathPart[],
-	variables?: PathVariable[],
+	regexp: RegExp,
+	props: object,
 	hydrationpath?: string,
 }
 
@@ -184,26 +173,13 @@ export async function routes(this: Nudol, routes_directory_path: string, params:
 
 } 
 
-
 export function parseRoute( method: string, route_path: string, hydrationpath: string|null = null ): Handler {
 
-	const parts: PathPart[] = route_path.split("/").map((e, index) => ({ id: index, value: e }))
+	const param_names = [...route_path.matchAll(/\{(.+?)\}/g)].map( g => g[1])
 
-	let variables: PathVariable[] = []
+	const regexp = "^" + (route_path.replaceAll(/\{(.+?)\}/gi, `(?<$1>[^\/]+)`)) + "$"
 
-	for(const part of parts) {
-
-		if(part.value[0] == "{" && part.value.slice(-1)[0] == "}") {
-
-			const name = part.value.slice(1, part.value.length - 1 )
-
-			variables.push({id: part.id, name: name} as PathVariable)
-
-		}
-
-	}
-
-	return { method: method, path: route_path, parts: parts, variables: variables, hydrationpath: hydrationpath } as Handler
+	return { method: method, path: route_path, regexp: regexp, params: undefined, hydrationpath: hydrationpath } as Handler
 
 }
 
