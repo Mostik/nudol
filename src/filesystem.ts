@@ -1,8 +1,27 @@
-import { type Handler, type PathVariable, type PathPart, Nudol } from "../index.ts"
-import _ from "lodash"
+import { Nudol } from "../index.ts"
 import { readdir, mkdir, exists } from "node:fs/promises";
 import path from "node:path" 
 import { Method } from "./method.ts";
+import { generateRoute } from "./routes.ts";
+
+// import { createElement } from "react"
+// import { renderToString } from "react-dom/server"
+
+export function hydrationScript( this: Nudol, hydrationpath: string|null ) {
+
+	if( hydrationpath ) {
+		let file_path = (this.url!.pathname)?.toLowerCase()
+		
+		if(this.url!.pathname == "/") {
+
+			file_path = "index"
+
+		}
+
+		return this.createElement("script", { type: "module", src: path.join( hydrationpath ), defer: 'defer' })
+	}
+
+}
 
 async function findDocumentFile( routes_path : any ) {
 	let doc_module = undefined;
@@ -26,18 +45,16 @@ async function findDocumentFile( routes_path : any ) {
 
 export interface RoutesParams {
 	headers?: any,
-	React: any,
-	ReactDom: any,
+	createElement?: any,
+	renderToString?: any,
 }
 
-export async function routes(this: Nudol, routes_directory_path: string, params: RoutesParams ) {
+export async function fsRoutes(this: Nudol, routes_directory_path: string, params: RoutesParams = { headers: {} } ) {
 
-	this.createElement = params.React.createElement;
-	this.renderToString = params.ReactDom.renderToString;
+	this.createElement = params.createElement
+	this.renderToString = params.renderToString
 
 	const ssr_response = ( doc_module: any, module: any, hydrationpath: string|null ) => {
-
-		console.log( module.loadData() )
 
 		let result = undefined;
 
@@ -47,11 +64,11 @@ export async function routes(this: Nudol, routes_directory_path: string, params:
 				result = this.createElement(
 					doc_module.default,
 					{ hydrationScript: this.hydrationScript.bind(this), hydrationpath: hydrationpath  },
-					this.createElement( module.default, { name: "hello", text: "ahahah" })
+					this.createElement( module.default )
 				)
 
 			} else {
-				result = this.createElement( module.default, { name: "hello", text: "amir" } )
+				result = this.createElement( module.default )
 			}
 
 		} else {
@@ -116,6 +133,7 @@ export async function routes(this: Nudol, routes_directory_path: string, params:
 				format: "esm",
 				minify: this.production, 
 				naming: '[hash].[ext]',
+				sourcemap: this.production ? "none" : "inline",
 			});
 
 			if(!result.success) {
@@ -141,15 +159,12 @@ export async function routes(this: Nudol, routes_directory_path: string, params:
 				if (name == "_document") {
 				} else if(name == "index") {
 
-					if( module.loadData ) {
-						console.log("Phahahha Hello world")
-					}
-
-					this.handlers.set(parseRoute(Method.GET, "/", static_path), async () => {
+					this.handlers.set(generateRoute(Method.GET, "/", static_path), async () => {
 						return ssr_response(doc_module, module, static_path)
 					})
+
 				} else {
-					this.handlers.set(parseRoute(Method.GET, path.join( "/", file_path).replaceAll("\\", "/"), static_path), async () => {
+					this.handlers.set(generateRoute(Method.GET, path.join( "/", file_path).replaceAll("\\", "/"), static_path), async () => {
 						return ssr_response(doc_module, module, static_path)
 					})
 				}

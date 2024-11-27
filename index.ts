@@ -1,13 +1,15 @@
 import _ from "lodash"
 
 import { generateRoute, type Handler } from "./src/routes";
-import { startInfo } from "./src/utils.ts";
+import * as Log from "./src/logs.ts";
 
 import { type Server } from "bun"
 import { Method } from "./src/method.ts"
 
 import * as Methods from "./src/method.ts"
+import { fsRoutes, hydrationScript, type RoutesParams } from "./src/filesystem.ts";
 
+//TODO: config store as object in nudol 
 interface Config {
 	port: string,
 	hostname?: string,
@@ -46,8 +48,9 @@ export interface Nudol {
 
 	server: Server | undefined;
 
-	// createElement: any
-	// renderToString: any
+
+	createElement: any,
+	renderToString: any,
 
 	get:  ( this: Nudol, path: string, fn: (request: Request) => void  ) => void, 
 	post: ( this: Nudol, path: string, fn: (request: Request) => void ) => void, 
@@ -62,13 +65,13 @@ export interface Nudol {
 
 	listen(): void,
 
-	// routes( routes_directory_path: string, params?: RoutesParams ): Promise<void>
+	fsRoutes( routes_directory_path: string, params?: RoutesParams ): Promise<void>
 	//
 	// routeValue(this: Nudol, name: string): any 
 	// routeParam(this: Nudol, name: string): string|null 
 	//
-	// hydrationScript( hydrationpath: string ): any
-	// hydrationBuild(): Promise<any> 
+	hydrationScript( hydrationpath: string ): any
+	hydrationBuild(): Promise<any> 
 	//
 	// ws( ws: WebSocket): void
 	
@@ -98,6 +101,9 @@ export function Nudol( config: Config ): Nudol {
 
 		upgrade_function: null,
 
+		createElement: null,
+		renderToString: null,
+
 		ws: ws, 
 		get: Methods.get,
 		post: Methods.post,
@@ -121,6 +127,12 @@ export function Nudol( config: Config ): Nudol {
 
 		},
 
+
+		hydrationScript: hydrationScript,
+		hydrationBuild: function(): Promise<any> { return new Promise( function () {} )},
+
+		fsRoutes: fsRoutes,
+
 		listen: listen 
 
 	}
@@ -137,6 +149,8 @@ function ws( this: Nudol, ws: WebSocket ) {
 async function listen( this: Nudol ) {
 	const self = this
 
+
+	Log.start( this )
 	// startInfo( this.hostname,this.port, this.handlers, this.websocket )
 
 	this.server = Bun.serve({
@@ -167,17 +181,7 @@ async function listen( this: Nudol ) {
 
 			const notfound = [...self.handlers ].find(( [k, _] ) => (k.path == "404" && k.method == req.method) )
 
-			if( notfound ) {
-
-				return notfound[1]( req )
-
-			}
-
-			// for( const [key, handle] of self.handlers.entries() ) {
-			// 	if(_.find([key], { method: req.method, path: "404"})) {
-			// 		return handle(req)
-			// 	}
-			// }
+			if( notfound ) return notfound[1]( req ) 
 
 			// if(self.websocket != null) {
 			// 	if(self.websocket.path == self.url.pathname) {

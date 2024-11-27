@@ -10,7 +10,7 @@ export interface Handler {
 }
 
 
-export function generateRoute( method: string, route_path: string, hydrationpath: string|null = null ): Handler {
+export function generateRoute( method: string, route_path: string, hydrationpath: string|undefined = undefined ): Handler {
 
 	const regexp = "^" + (route_path.replaceAll(/\{(.+?)\}/gi, `(?<$1>[^\/]+)`)) + "$"
 
