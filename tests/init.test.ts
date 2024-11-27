@@ -116,6 +116,35 @@ test("notfound", async () => {
 
 });
 
-//params
+test("params", async () => {
+
+	const nudol = Nudol( { port: "11238", hostname: "127.0.0.1" } )
+
+	nudol.get("/user/@{username}", function ( ctx ) {
+		console.log( ctx )
+
+		return new Response(`Hello ${ctx.params.username}`)
+	});
+
+	nudol.get("/user/{username}", function ( ctx ) {
+
+		return new Response(`Hello ${ctx.params.username}`)
+	});
+
+
+
+	nudol.listen()
+
+	expect(await (await fetch("http://127.0.0.1:11238/user/dave")).text()).toBe("Hello dave")
+	expect(await (await fetch("http://127.0.0.1:11238/user/7382")).text()).toBe("Hello 7382")
+	expect(await (await fetch("http://127.0.0.1:11238/user/*&^$(")).text()).toBe("Hello *&^$(")
+	expect(await (await fetch("http://127.0.0.1:11238/user/@steve")).text()).toBe("Hello steve")
+
+	nudol.server!.stop();
+
+});
+
+
+
 //ws 
 //production

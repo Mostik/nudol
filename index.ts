@@ -1,12 +1,14 @@
-import { generateRoute, type Handler } from "./src/routes";
-import * as Log from "./src/logs.ts";
+import { fsRoutes, hydrationScript, type RoutesParams } from "./src/filesystem.ts";
 
+
+import { generateRoute, generateContext } from "./src/routes";
+import { type Context, type Handler } from "./src/routes"
 import { type Server } from "bun"
 import { Method } from "./src/method.ts"
+import { fsStatic } from "./src/static.ts"
 
 import * as Methods from "./src/method.ts"
-import { fsRoutes, hydrationScript, type RoutesParams } from "./src/filesystem.ts";
-import { fsStatic } from "./src/static.ts"
+import * as Log from "./src/logs.ts";
 
 //TODO: config store as object in nudol 
 interface Config {
@@ -30,7 +32,7 @@ export interface Nudol {
 	config: Config,
 
 	url?: URL;
-	handlers: Map<Handler, (request: Request) => any>;
+	handlers: Map<Handler, (context: Context) => any>;
 	handler: Handler | null;
 	routes_path: string|null;
 	websocket: WebSocket | null;
@@ -43,15 +45,15 @@ export interface Nudol {
 	createElement: any,
 	renderToString: any,
 
-	get:  ( this: Nudol, path: string, fn: (request: Request) => void  ) => void, 
-	post: ( this: Nudol, path: string, fn: (request: Request) => void ) => void, 
+	get:  ( this: Nudol, path: string, fn: (request: Context) => void  ) => void, 
+	post: ( this: Nudol, path: string, fn: (request: Context) => void ) => void, 
 
 	ws: ( ws: WebSocket ) => void;
 
 	upgrade_function: (( server: Server, request: Request) => Promise<boolean>) | null;
 	upgrade: ( fn: ( server: Server, request: Request) => Promise<boolean> ) => void;
 
-	notfound: ( methods: Method[] , fn: (request: Request) => void ) => void;
+	notfound: ( methods: Method[] , fn: (request: Context) => void ) => void;
 	fsStatic: ( path: string, alias?: string ) => Promise<void>;
 
 	listen(): void,
@@ -101,7 +103,7 @@ export function Nudol( config: Config = {
 			this.upgrade_function = fn
 		},
 
-		notfound: function ( methods: Method[] , fn: (request: Request) => void ) {
+		notfound: function ( methods: Method[] , fn: (context: Context) => void ) {
 
 			for(let method of methods) {
 				this.handlers.set(generateRoute(method, "404"), fn)
@@ -128,7 +130,7 @@ function ws( this: Nudol, ws: WebSocket ) {
 	this.websocket = ws
 }
 
-async function listen( this: Nudol ) {
+function listen( this: Nudol ) {
 	const self = this
 
 	Log.start( this )
@@ -153,7 +155,7 @@ async function listen( this: Nudol ) {
 
 					self.handler = { ...handler, params: check.groups } as Handler
 
-					return handler_function( req )
+					return handler_function( generateContext( req, check.groups ) )
 
 				}
 
@@ -161,7 +163,7 @@ async function listen( this: Nudol ) {
 
 			const notfound = [...self.handlers ].find(( [k, _] ) => (k.path == "404" && k.method == req.method) )
 
-			if( notfound ) return notfound[1]( req ) 
+			if( notfound ) return notfound[1]( generateContext( req, {}) ) 
 
 			// if(self.websocket != null) {
 			// 	if(self.websocket.path == self.url.pathname) {

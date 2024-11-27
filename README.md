@@ -41,6 +41,19 @@ nudol.listen()
 
 ```js
 import { Nudol } from "@nudol/core"
+
+const nudol = Nudol()
+
+nudol.get("/user/{username}", (ctx) => {
+
+  return new Response(`Hello ${ctx.params.username}`)
+})
+
+nudol.listen()
+```
+
+```js
+import { Nudol } from "@nudol/core"
 import { createElement } from "react" 
 import { renderToString } from "react-dom/server" 
 

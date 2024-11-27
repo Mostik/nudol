@@ -24,16 +24,17 @@ export function generateRoute( method: string, route_path: string, hydrationpath
 
 }
 
-export function routeValue(this: Nudol, name: string) {
 
-	return _.find(this.handler.params, { name: name }).value
-
+export interface Context {
+	request: Request,
+	params: any,
 }
 
-export function routeParam(this: Nudol, name: string): string|null {
 
-	const params = this.url.searchParams
-
-	return params.get(name)
-
+export function generateContext( req: Request, params: any ): Context {
+	return {
+		request: req,
+		params: params,
+	} as Context
 }
+

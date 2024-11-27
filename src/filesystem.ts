@@ -131,9 +131,9 @@ export async function fsRoutes(this: Nudol, routes_directory_path: string, param
 			const result = await Bun.build({
 				entrypoints: [ build_file ],
 				format: "esm",
-				minify: this.production, 
+				minify: this.config.production, 
 				naming: '[hash].[ext]',
-				sourcemap: this.production ? "none" : "inline",
+				sourcemap: this.config.production ? "none" : "inline",
 			});
 
 			if(!result.success) {
