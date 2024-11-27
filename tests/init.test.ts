@@ -113,7 +113,6 @@ test("notfound", async () => {
 	expect(await (await fetch("http://127.0.0.1:11234/post", { method: "POST" })).text()).toBe("404 Not found")
 
 	nudol.server!.stop();
-	
 
 });
 

@@ -18,12 +18,35 @@ bun add @nudol/core
 
 
 ## Example
+
+```js
+import { Nudol } from "@nudol/core"
+
+const nudol = Nudol()
+
+nudol.listen()
+```
+
+```js
+import { Nudol } from "@nudol/core"
+
+const nudol = Nudol()
+
+nudol.get("/", () => {
+  return new Response("Hello world")
+})
+
+nudol.listen()
+```
+
 ```js
 import { Nudol } from "@nudol/core"
 import { createElement } from "react" 
 import { renderToString } from "react-dom/server" 
 
 const nudol = Nudol( { port: "3000", hostname: "127.0.0.1" } )
+
+await nudol.fsStatic( "./static" )
 
 await nudol.fsRoutes( "./routes", { headers: {}, createElement, renderToString } )
 
