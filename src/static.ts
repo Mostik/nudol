@@ -4,9 +4,6 @@ import { join, relative } from "node:path"
 
 export async function fsStatic(this: Nudol, path: string, alias: string = "static" ) {
 
-	this.static_path = path;
-	this.static_alias = alias;
-
 	const files = await readdir( path, { recursive: true, withFileTypes: true } )
 
 	for( let file of files ) {

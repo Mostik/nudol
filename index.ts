@@ -1,5 +1,3 @@
-import _ from "lodash"
-
 import { generateRoute, type Handler } from "./src/routes";
 import * as Log from "./src/logs.ts";
 
@@ -29,9 +27,8 @@ interface WebSocket {
 }
 
 export interface Nudol {
+	config: Config,
 
-	port: string;
-	hostname: string;
 	url?: URL;
 	handlers: Map<Handler, (request: Request) => any>;
 	handler: Handler | null;
@@ -41,12 +38,7 @@ export interface Nudol {
 	temp_path: string; 
 	static_routes: any;
 
-	production: boolean;
-	key?: string;
-	cert?: string;
-
 	server: Server | undefined;
-
 
 	createElement: any,
 	renderToString: any,
@@ -71,16 +63,19 @@ export interface Nudol {
 	//
 	hydrationScript( hydrationpath: string ): any
 	hydrationBuild(): Promise<any> 
-	//
-	// ws( ws: WebSocket): void
 	
 }
 
-export function Nudol( config: Config ): Nudol {
+export function Nudol( config: Config = {
+	port: "3000",
+	hostname: "0.0.0.0",
+	production: false,
+	key: undefined,
+	cert: undefined,
+} ): Nudol {
 
 	var instance: Nudol = { 
-		port: config.port,
-		hostname: config.hostname || "0.0.0.0",
+		config: config,
 		url: undefined,
 		handlers: new Map([]),
 		handler: null,
@@ -92,9 +87,6 @@ export function Nudol( config: Config ): Nudol {
 
 		server: undefined,
 		
-		production: config.production || false,
-		key: config.key,
-		cert: config.cert,
 
 		upgrade_function: null,
 
@@ -116,7 +108,6 @@ export function Nudol( config: Config ): Nudol {
 			}
 
 		},
-
 
 		hydrationScript: hydrationScript,
 		hydrationBuild: function(): Promise<any> { return new Promise( function () {} )},
@@ -144,11 +135,11 @@ async function listen( this: Nudol ) {
 
 	this.server = Bun.serve({
 
-		port: this.port,
-		hostname: this.hostname,
+		port: this.config.port,
+		hostname: this.config.hostname,
 		static: this.static_routes,
-		keyFile: this.key,
-		certFile: this.cert,
+		keyFile: this.config.key,
+		certFile: this.config.cert,
 
 		async fetch( req: Request ) {
 

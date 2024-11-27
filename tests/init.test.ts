@@ -2,13 +2,25 @@ import { Nudol } from "../index.ts"
 import { expect, test } from "bun:test";
 import { Method } from "../src/method.ts";
 
+test("minimal", () => {
+
+	const nudol = Nudol()
+
+	nudol.listen()
+
+	expect( typeof nudol ).toBe("object");
+	expect( nudol.config.port ).toBe("3000");	
+	expect( nudol.config.hostname ).toBe("0.0.0.0");	
+
+})
+
 test("init", () => {
 
 	const nudol = Nudol( { port: "11230", hostname: "127.0.0.1" } )
 
 	expect( typeof nudol ).toBe("object");
-	expect( nudol.port ).toBe("11230");	
-	expect( nudol.hostname ).toBe("127.0.0.1");	
+	expect( nudol.config.port ).toBe("11230");	
+	expect( nudol.config.hostname ).toBe("127.0.0.1");	
 
 });
 
@@ -106,6 +118,5 @@ test("notfound", async () => {
 });
 
 //params
-//routes
 //ws 
-
+//production
