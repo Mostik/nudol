@@ -7,7 +7,7 @@ export default function( props: any ) {
 	return (
 		<html>
 			<head>
-				{ props.hydrationScript( props.hydrationpath ) }
+				{ props.hydrationScript() }
 			</head>
 
 			<body>

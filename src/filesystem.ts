@@ -63,7 +63,7 @@ export async function fsRoutes(this: Nudol, routes_directory_path: string, param
 			if( doc_module ) {
 				result = this.createElement(
 					doc_module.default,
-					{ hydrationScript: this.hydrationScript.bind(this), hydrationpath: hydrationpath  },
+					{ hydrationScript: this.hydrationScript.bind(this, hydrationpath!) },
 					this.createElement( module.default )
 				)
 
@@ -76,7 +76,7 @@ export async function fsRoutes(this: Nudol, routes_directory_path: string, param
 			if( doc_module ) {
 				result = this.createElement(
 					doc_module.default,
-					{ hydrationScript: this.hydrationScript.bind(this), hydrationpath: hydrationpath  },
+					{ hydrationScript: this.hydrationScript.bind(this, hydrationpath!)  },
 					this.createElement( module.default )
 				)
 
