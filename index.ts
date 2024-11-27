@@ -8,6 +8,7 @@ import { Method } from "./src/method.ts"
 
 import * as Methods from "./src/method.ts"
 import { fsRoutes, hydrationScript, type RoutesParams } from "./src/filesystem.ts";
+import { fsStatic } from "./src/static.ts"
 
 //TODO: config store as object in nudol 
 interface Config {
@@ -34,8 +35,6 @@ export interface Nudol {
 	url?: URL;
 	handlers: Map<Handler, (request: Request) => any>;
 	handler: Handler | null;
-	public_path: string|null;
-	public_alias: string|null;
 	routes_path: string|null;
 	websocket: WebSocket | null;
 	temp_dir: boolean; 
@@ -61,7 +60,7 @@ export interface Nudol {
 	upgrade: ( fn: ( server: Server, request: Request) => Promise<boolean> ) => void;
 
 	notfound: ( methods: Method[] , fn: (request: Request) => void ) => void;
-	public: ( path: string, alias: string ) => void;
+	fsStatic: ( path: string, alias?: string ) => Promise<void>;
 
 	listen(): void,
 
@@ -85,8 +84,6 @@ export function Nudol( config: Config ): Nudol {
 		url: undefined,
 		handlers: new Map([]),
 		handler: null,
-		public_path: null,
-		public_alias: null,
 		routes_path: null,
 		websocket: null, 
 		temp_dir: false,
@@ -120,17 +117,11 @@ export function Nudol( config: Config ): Nudol {
 
 		},
 
-		public: function ( path: string, alias: string = "public" ) {
-
-			this.public_path = path;
-			this.public_alias = alias;
-
-		},
-
 
 		hydrationScript: hydrationScript,
 		hydrationBuild: function(): Promise<any> { return new Promise( function () {} )},
 
+		fsStatic: fsStatic, 
 		fsRoutes: fsRoutes,
 
 		listen: listen 
@@ -149,9 +140,7 @@ function ws( this: Nudol, ws: WebSocket ) {
 async function listen( this: Nudol ) {
 	const self = this
 
-
 	Log.start( this )
-	// startInfo( this.hostname,this.port, this.handlers, this.websocket )
 
 	this.server = Bun.serve({
 
