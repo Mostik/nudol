@@ -12,7 +12,7 @@ import * as Methods from "./src/method.ts"
 import * as Log from "./src/logs.ts";
 
 interface Config {
-	port: string,
+	port: string | number,
 	hostname?: string,
 	production?: boolean,
 
@@ -53,7 +53,7 @@ export interface Nudol {
 }
 
 export function Nudol( config: Config = {
-	port: "3000",
+	port: 3000,
 	hostname: "0.0.0.0",
 	production: false,
 	key: undefined,
@@ -119,6 +119,8 @@ function listen( this: Nudol ) {
 			self.url = new URL(req.url)
 			
 			for(const [handler, handler_function] of self.handlers) {
+
+				if( req.method != handler.method ) continue;
 
 				let check = self.url.pathname.match( handler.regexp ) 
 

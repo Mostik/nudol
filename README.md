@@ -52,12 +52,17 @@ nudol.get("/user/{username}", (ctx) => {
 nudol.listen()
 ```
 
+```
+bun add @nudol/core react react-dom
+```
+
+
 ```js
 // routes/index.tsx
 
 export default function() {
 
-  return(
+  return (
     <h1>Index page</h1>
   )
 
@@ -66,14 +71,31 @@ export default function() {
 // index.ts
 import { Nudol } from "@nudol/core"
 
-const nudol = Nudol( { port: "3000", hostname: "127.0.0.1" } )
-
-await nudol.fsStatic( "./static" )
+const nudol = Nudol( { port: 3000, hostname: "127.0.0.1" } )
 
 await nudol.fsRoutes( "./routes" )
 
-nudol.get("/", () => {
-  return new Response("Hello world")
+nudol.listen()
+```
+
+
+```js
+import { Nudol } from "@nudol/core"
+
+const nudol = Nudol( { port: 3000, hostname: "127.0.0.1" } )
+
+await nudol.static( "./static" )
+
+await nudol.fsRoutes( "./routes" )
+
+nudol.get("/api/get", () => {
+
+  return new Response("get")
+})
+
+nudol.post("/api/post", () => {
+
+  return new Response("post")
 })
 
 nudol.notfound([Method.GET, Method.POST], () => {
