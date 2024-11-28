@@ -1,5 +1,3 @@
-import { Nudol } from "../index.ts"
-import _ from "lodash"
 
 export interface Handler {
 	method: string,

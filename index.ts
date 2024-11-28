@@ -1,8 +1,9 @@
 import { fsRoutes, hydrationScript, type RoutesParams } from "./src/filesystem.ts";
-
+import { ws, upgrade } from "./src/websocket"
 
 import { generateRoute, generateContext } from "./src/routes";
 import { type Context, type Handler } from "./src/routes"
+import { type WebSocket } from "./src/websocket"
 import { type Server } from "bun"
 import { Method } from "./src/method.ts"
 import { fsStatic } from "./src/static.ts"
@@ -10,7 +11,6 @@ import { fsStatic } from "./src/static.ts"
 import * as Methods from "./src/method.ts"
 import * as Log from "./src/logs.ts";
 
-//TODO: config store as object in nudol 
 interface Config {
 	port: string,
 	hostname?: string,
@@ -20,20 +20,11 @@ interface Config {
 	cert?: string,
 }
 
-interface WebSocket {
-	path: "/ws",
-	idleTimeout: number,
-	onopen: (ws:any) => any,
-	onmessage: (ws:any, message: any) => any,
-	onclose: (ws:any, code: any) => any,
-}
-
 export interface Nudol {
 	config: Config,
 
 	url?: URL;
 	handlers: Map<Handler, (context: Context) => any>;
-	handler: Handler | null;
 	routes_path: string|null;
 	websocket: WebSocket | null;
 	temp_dir: boolean; 
@@ -41,9 +32,6 @@ export interface Nudol {
 	static_routes: any;
 
 	server: Server | undefined;
-
-	createElement: any,
-	renderToString: any,
 
 	get:  ( this: Nudol, path: string, fn: (request: Context) => void  ) => void, 
 	post: ( this: Nudol, path: string, fn: (request: Context) => void ) => void, 
@@ -54,17 +42,13 @@ export interface Nudol {
 	upgrade: ( fn: ( server: Server, request: Request) => Promise<boolean> ) => void;
 
 	notfound: ( methods: Method[] , fn: (request: Context) => void ) => void;
-	fsStatic: ( path: string, alias?: string ) => Promise<void>;
 
 	listen(): void,
 
+	fsStatic: ( path: string, alias?: string ) => Promise<void>;
 	fsRoutes( routes_directory_path: string, params?: RoutesParams ): Promise<void>
-	//
-	// routeValue(this: Nudol, name: string): any 
-	// routeParam(this: Nudol, name: string): string|null 
-	//
+
 	hydrationScript( hydrationpath: string ): any
-	hydrationBuild(): Promise<any> 
 	
 }
 
@@ -80,7 +64,6 @@ export function Nudol( config: Config = {
 		config: config,
 		url: undefined,
 		handlers: new Map([]),
-		handler: null,
 		routes_path: null,
 		websocket: null, 
 		temp_dir: false,
@@ -89,20 +72,13 @@ export function Nudol( config: Config = {
 
 		server: undefined,
 		
-
 		upgrade_function: null,
-
-		createElement: null,
-		renderToString: null,
 
 		ws: ws, 
 		get: Methods.get,
 		post: Methods.post,
 
-		upgrade: function( fn: ( server: Server, request: Request ) => Promise<boolean> ) {
-			this.upgrade_function = fn
-		},
-
+		upgrade: upgrade,
 		notfound: function ( methods: Method[] , fn: (context: Context) => void ) {
 
 			for(let method of methods) {
@@ -112,7 +88,6 @@ export function Nudol( config: Config = {
 		},
 
 		hydrationScript: hydrationScript,
-		hydrationBuild: function(): Promise<any> { return new Promise( function () {} )},
 
 		fsStatic: fsStatic, 
 		fsRoutes: fsRoutes,
@@ -125,10 +100,6 @@ export function Nudol( config: Config = {
 
 }
 
-
-function ws( this: Nudol, ws: WebSocket ) {
-	this.websocket = ws
-}
 
 function listen( this: Nudol ) {
 	const self = this
@@ -152,8 +123,6 @@ function listen( this: Nudol ) {
 				let check = self.url.pathname.match( handler.regexp ) 
 
 				if( check ) {
-
-					self.handler = { ...handler, params: check.groups } as Handler
 
 					return handler_function( generateContext( req, check.groups ) )
 

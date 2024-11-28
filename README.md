@@ -53,15 +53,24 @@ nudol.listen()
 ```
 
 ```js
+// routes/index.tsx
+
+export default function() {
+
+  return(
+    <h1>Index page</h1>
+  )
+
+}
+
+// index.ts
 import { Nudol } from "@nudol/core"
-import { createElement } from "react" 
-import { renderToString } from "react-dom/server" 
 
 const nudol = Nudol( { port: "3000", hostname: "127.0.0.1" } )
 
 await nudol.fsStatic( "./static" )
 
-await nudol.fsRoutes( "./routes", { headers: {}, createElement, renderToString } )
+await nudol.fsRoutes( "./routes" )
 
 nudol.get("/", () => {
   return new Response("Hello world")

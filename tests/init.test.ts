@@ -121,7 +121,6 @@ test("params", async () => {
 	const nudol = Nudol( { port: "11238", hostname: "127.0.0.1" } )
 
 	nudol.get("/user/@{username}", function ( ctx ) {
-		console.log( ctx )
 
 		return new Response(`Hello ${ctx.params.username}`)
 	});

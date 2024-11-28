@@ -4,8 +4,9 @@ import path from "node:path"
 import { Method } from "./method.ts";
 import { generateRoute } from "./routes.ts";
 
-// import { createElement } from "react"
-// import { renderToString } from "react-dom/server"
+import { createElement } from "react"
+import { renderToString } from "react-dom/server"
+import type { BuildOutput } from "bun";
 
 export function hydrationScript( this: Nudol, hydrationpath: string|null ) {
 
@@ -18,7 +19,7 @@ export function hydrationScript( this: Nudol, hydrationpath: string|null ) {
 
 		}
 
-		return this.createElement("script", { type: "module", src: path.join( hydrationpath ), defer: 'defer' })
+		return createElement("script", { type: "module", src: path.join( hydrationpath ), defer: 'defer' })
 	}
 
 }
@@ -43,61 +44,82 @@ async function findDocumentFile( routes_path : any ) {
 	return doc_module
 }
 
+
+function SSRPrepare( this: Nudol, doc_module: any, module: any, hydrationpath: string|null ) {
+	return createElement(
+		doc_module.default,
+		{ hydrationScript: this.hydrationScript.bind(this, hydrationpath!) },
+		createElement( module.default )
+	)
+ 
+} 
+
+
+function SSR( this: Nudol,  doc_module: any, module: any, hydrationpath: string|null ) {
+	let result = undefined;
+
+	if( doc_module ) {
+		result = (SSRPrepare.bind( this ))( doc_module, module, hydrationpath )
+	} else {
+		result = createElement( module.default )
+	}
+
+	return new Response( renderToString(result), {
+		headers: {
+			'Content-Type': "text/html; charset=utf-8",
+		}
+	})
+
+}
+
+
+async function HydrationToTemp( this: Nudol, build_file: any, component_file: any ): void {
+
+	await Bun.write( Bun.file( build_file ),
+		`
+			import { hydrateRoot } from "react-dom/client"\n
+			import HydrationComponent from "${component_file}"\n
+			hydrateRoot(document.getElementById('root'), <HydrationComponent></HydrationComponent>)\n
+		`
+	)
+
+}
+
+async function HydrationBuild( this: Nudol, build_file: any ): Promise<BuildOutput> {
+
+	return await Bun.build({
+		entrypoints: [ build_file ],
+		format: "esm",
+		minify: this.config.production, 
+		naming: '[hash].[ext]',
+		sourcemap: this.config.production ? "none" : "inline",
+	});
+
+
+}
+
+function HydrationToStatic( this: Nudol, static_path: string, result: any, params: any) {
+
+
+	this.static_routes[ static_path ] = new Response( result.outputs[0], { 
+		headers: { 
+			"Content-Type" : "text/javascript;charset=utf-8", 
+			...params.headers
+		}
+	} )
+
+
+}
+
 export interface RoutesParams {
 	headers?: any,
-	createElement?: any,
-	renderToString?: any,
 }
 
 export async function fsRoutes(this: Nudol, routes_directory_path: string, params: RoutesParams = { headers: {} } ) {
 
-	this.createElement = params.createElement
-	this.renderToString = params.renderToString
-
-	const ssr_response = ( doc_module: any, module: any, hydrationpath: string|null ) => {
-
-		let result = undefined;
-
-		if( module.loadData ) {
-
-			if( doc_module ) {
-				result = this.createElement(
-					doc_module.default,
-					{ hydrationScript: this.hydrationScript.bind(this, hydrationpath!) },
-					this.createElement( module.default )
-				)
-
-			} else {
-				result = this.createElement( module.default )
-			}
-
-		} else {
-
-			if( doc_module ) {
-				result = this.createElement(
-					doc_module.default,
-					{ hydrationScript: this.hydrationScript.bind(this, hydrationpath!)  },
-					this.createElement( module.default )
-				)
-
-			} else {
-				result = this.createElement( module.default )
-			}
-
-		}
-
-		return new Response( this.renderToString(result), {
-			headers: {
-				'Content-Type': "text/html; charset=utf-8",
-			}
-		})
-
-	} 
-
 	if(!(await exists( path.join( process.cwd(), this.temp_path)))) {
 		await mkdir( path.join( process.cwd(), this.temp_path) )
 	}
-
 
 	this.routes_path = routes_directory_path;
 
@@ -120,21 +142,9 @@ export async function fsRoutes(this: Nudol, routes_directory_path: string, param
 			const build_path = path.join( process.cwd(), this.temp_path, dir, name ) 
 			const build_file = path.join( build_path + ".tsx" ) 
 
-			await Bun.write( Bun.file( build_file ),
-				`
-					import { hydrateRoot } from "react-dom/client"\n
-					import HydrationComponent from "${component_file}"\n
-					hydrateRoot(document.getElementById('root'), <HydrationComponent></HydrationComponent>)\n
-				`
-			)
+			HydrationToTemp.bind(this)( build_file, component_file )
 
-			const result = await Bun.build({
-				entrypoints: [ build_file ],
-				format: "esm",
-				minify: this.config.production, 
-				naming: '[hash].[ext]',
-				sourcemap: this.config.production ? "none" : "inline",
-			});
+			const result = await HydrationBuild.bind(this)( build_file )
 
 			if(!result.success) {
 				console.log(result.logs)
@@ -143,12 +153,7 @@ export async function fsRoutes(this: Nudol, routes_directory_path: string, param
 
 			const static_path = path.join("/", this.temp_path, result.outputs[0].path ).replaceAll("\\", "/")
 
-			this.static_routes[ static_path ] = new Response( result.outputs[0], { 
-				headers: { 
-					"Content-Type" : "text/javascript;charset=utf-8", 
-					...params.headers
-				}
-			} )
+			HydrationToStatic.bind(this)( static_path, result, params )
 
 			try {
 				const import_path = path.join(process.cwd(), file.parentPath, file.name)
@@ -160,12 +165,12 @@ export async function fsRoutes(this: Nudol, routes_directory_path: string, param
 				} else if(name == "index") {
 
 					this.handlers.set(generateRoute(Method.GET, "/", static_path), async () => {
-						return ssr_response(doc_module, module, static_path)
+						return (SSR.bind(this))(doc_module, module, static_path)
 					})
 
 				} else {
 					this.handlers.set(generateRoute(Method.GET, path.join( "/", file_path).replaceAll("\\", "/"), static_path), async () => {
-						return ssr_response(doc_module, module, static_path)
+						return (SSR.bind(this))(doc_module, module, static_path)
 					})
 				}
 			} catch (error) {
