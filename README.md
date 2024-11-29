@@ -104,5 +104,20 @@ nudol.notfound([Method.GET, Method.POST], () => {
 
 nudol.listen()
 ```
+
+#### Tailwind for "bun --watch"
+```js
+import { Nudol } from "@nudol/core"
+
+import { $ } from "bun"
+await $`bunx --bun tailwindcss -i ./static/index.css -o ./static/output.css --minify`.quiet()
+
+const nudol = Nudol()
+
+await nudol.fsStatic("./static")
+await nudol.fsRoutes("./routes")
+
+nudol.listen()
+```
 ## Documentation
 Never...
