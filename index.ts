@@ -15,6 +15,7 @@ interface Config {
 	port: string | number,
 	hostname?: string,
 	production?: boolean,
+	logs?: boolean,
 
 	key?: string,
 	cert?: string,
@@ -52,16 +53,18 @@ export interface Nudol {
 	
 }
 
-export function Nudol( config: Config = {
-	port: 3000,
-	hostname: "0.0.0.0",
-	production: false,
-	key: undefined,
-	cert: undefined,
-} ): Nudol {
+export function Nudol( config: Partial<Config> ): Nudol {
 
 	var instance: Nudol = { 
-		config: config,
+		config: {
+			port: 3000,
+			hostname: "0.0.0.0",
+			production: false,
+			logs: true,
+			key: undefined,
+			cert: undefined,
+			...config
+		} as Config,
 		url: undefined,
 		handlers: new Map([]),
 		routes_path: null,
@@ -104,7 +107,11 @@ export function Nudol( config: Config = {
 function listen( this: Nudol ) {
 	const self = this
 
-	Log.start( this )
+
+	// console.log( this.config.logs )
+
+	if(this.config.logs) Log.start( this )
+	//
 
 	this.server = Bun.serve({
 

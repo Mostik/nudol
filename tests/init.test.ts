@@ -16,7 +16,7 @@ test("minimal", () => {
 
 test("init", () => {
 
-	const nudol = Nudol( { port: "11230", hostname: "127.0.0.1" } )
+	const nudol = Nudol( { port: "11230", hostname: "127.0.0.1", logs: false } )
 
 	expect( typeof nudol ).toBe("object");
 	expect( nudol.config.port ).toBe("11230");	
@@ -26,7 +26,7 @@ test("init", () => {
 
 test("init port number", () => {
 
-	const nudol = Nudol( { port: 11240, hostname: "127.0.0.1" } )
+	const nudol = Nudol( { port: 11240, hostname: "127.0.0.1", logs: false } )
 
 	expect( typeof nudol ).toBe("object");
 	expect( nudol.config.port ).toBe(11240);	
@@ -36,7 +36,7 @@ test("init port number", () => {
 
 test("get", async () => {
 
-	const nudol = Nudol( { port: "11231", hostname: "127.0.0.1" } )
+	const nudol = Nudol( { port: "11231", hostname: "127.0.0.1", logs: false } )
 
 	nudol.get("/", function () {
 
@@ -53,7 +53,7 @@ test("get", async () => {
 
 test("post", async () => {
 
-	const nudol = Nudol( { port: "11232", hostname: "127.0.0.1" } )
+	const nudol = Nudol( { port: "11232", hostname: "127.0.0.1", logs: false } )
 
 	nudol.post("/post", function () {
 
@@ -71,7 +71,7 @@ test("post", async () => {
 
 test("regexp", async () => {
 
-	const nudol = Nudol( { port: "11233", hostname: "127.0.0.1" } )
+	const nudol = Nudol( { port: "11233", hostname: "127.0.0.1", logs: false } )
 
 	nudol.get("/", function () {
 		return new Response("yes main")
@@ -111,7 +111,7 @@ test("regexp", async () => {
 
 test("notfound", async () => {
 
-	const nudol = Nudol( { port: "11234", hostname: "127.0.0.1" } )
+	const nudol = Nudol( { port: "11234", hostname: "127.0.0.1", logs: false } )
 
 	nudol.notfound( [ Method.GET ], function () {
 		return new Response("My not found")
@@ -128,7 +128,7 @@ test("notfound", async () => {
 
 test("params", async () => {
 
-	const nudol = Nudol( { port: "11238", hostname: "127.0.0.1" } )
+	const nudol = Nudol( { port: "11238", hostname: "127.0.0.1", logs: false } )
 
 	nudol.get("/user/@{username}", function ( ctx ) {
 

@@ -3,7 +3,7 @@ import { expect, test, not } from "bun:test";
 
 test("static", async () => {
 
-	const nudol = Nudol( { port: "11236", hostname: "127.0.0.1" } )
+	const nudol = Nudol( { port: "11236", hostname: "127.0.0.1", logs: false } )
 
 	await nudol.fsStatic( "./tests/test_static" )
 

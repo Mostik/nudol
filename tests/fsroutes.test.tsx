@@ -1,14 +1,11 @@
 import { Nudol } from "../index.ts"
 import { expect, test } from "bun:test";
-import { createElement } from "react" 
 import { renderToString } from "react-dom/server" 
 import Taylor from "./test_routes/names/taylor.tsx";
 
-// import Taylor from "./test_routes/names/taylor.tsx";
-
 test("fs init", async () => {
 
-	const nudol = Nudol( { port: "11235", hostname: "127.0.0.1" } )
+	const nudol = Nudol( { port: "11235", hostname: "127.0.0.1", logs: false } )
 
 	await nudol.fsRoutes( "./tests/test_routes" )
 
