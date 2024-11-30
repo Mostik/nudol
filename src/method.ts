@@ -26,3 +26,12 @@ export function post( this: Nudol, path: string, fn: (request: Context) => void 
 
 }
 
+//TODO: change api
+export function notfound( this: Nudol, methods: Method[] , fn: (context: Context) => void ) {
+
+	for(let method of methods) {
+		this.handlers.set(generateHandler(method, "404"), fn)
+	}
+
+}
+

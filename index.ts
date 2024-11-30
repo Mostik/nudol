@@ -78,18 +78,12 @@ export function Nudol( config: Partial<Config> ): Nudol {
 		upgrade_function: null,
 
 		ws: ws, 
+
 		get: Methods.get,
 		post: Methods.post,
+		notfound: Methods.notfound, 
 
 		upgrade: upgrade,
-		notfound: function ( methods: Method[] , fn: (context: Context) => void ) {
-
-			for(let method of methods) {
-				this.handlers.set(generateHandler(method, "404"), fn)
-			}
-
-		},
-
 		hydrationScript: hydrationScript,
 
 		fsStatic: fsStatic, 
@@ -107,11 +101,7 @@ export function Nudol( config: Partial<Config> ): Nudol {
 function listen( this: Nudol ) {
 	const self = this
 
-
-	// console.log( this.config.logs )
-
 	if(this.config.logs) Log.start( this )
-	//
 
 	this.server = Bun.serve({
 
