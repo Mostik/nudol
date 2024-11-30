@@ -53,7 +53,7 @@ export interface Nudol {
 	
 }
 
-export function Nudol( config: Partial<Config> ): Nudol {
+export function Nudol( config: Partial<Config> = {} ): Nudol {
 
 	var instance: Nudol = { 
 		config: {
