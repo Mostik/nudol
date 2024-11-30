@@ -1,7 +1,7 @@
 import { fsRoutes, hydrationScript, type RoutesParams } from "./src/filesystem.ts";
 import { ws, upgrade } from "./src/websocket"
 
-import { generateHandler, generateContext } from "./src/routes";
+import { generateContext } from "./src/routes";
 import { type Context, type Handler } from "./src/routes"
 import { type WebSocket } from "./src/websocket"
 import { type Server } from "bun"
@@ -36,20 +36,20 @@ export interface Nudol {
 
 	get:  ( this: Nudol, path: string, fn: (request: Context) => void  ) => void, 
 	post: ( this: Nudol, path: string, fn: (request: Context) => void ) => void, 
+	notfound: ( methods: Method[] , fn: (request: Context) => void ) => void;
 
 	ws: ( ws: WebSocket ) => void;
 
 	upgrade_function: (( server: Server, request: Request) => Promise<boolean>) | null;
 	upgrade: ( fn: ( server: Server, request: Request) => Promise<boolean> ) => void;
 
-	notfound: ( methods: Method[] , fn: (request: Context) => void ) => void;
-
-	listen(): void,
 
 	fsStatic: ( path: string, alias?: string ) => Promise<void>;
 	fsRoutes( routes_directory_path: string, params?: RoutesParams ): Promise<void>
 
 	hydrationScript( hydrationpath: string ): any
+
+	listen(): void,
 	
 }
 
