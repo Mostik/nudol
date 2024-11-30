@@ -2,11 +2,12 @@ import { Nudol } from "../index.ts"
 import { readdir, mkdir, exists } from "node:fs/promises";
 import path from "node:path" 
 import { Method } from "./method.ts";
-import { generateRoute } from "./routes.ts";
+import { generateHandler, type Context, type Handler } from "./routes.ts";
 
 import { createElement } from "react"
 import { renderToString } from "react-dom/server"
 import type { BuildOutput } from "bun";
+import * as Log from "./logs.ts";
 
 export function hydrationScript( this: Nudol, hydrationpath: string|null ) {
 
@@ -23,6 +24,7 @@ export function hydrationScript( this: Nudol, hydrationpath: string|null ) {
 	}
 
 }
+
 
 async function findDocumentFile( routes_path : any ) {
 	let doc_module = undefined;
@@ -45,23 +47,28 @@ async function findDocumentFile( routes_path : any ) {
 }
 
 
-function SSRPrepare( this: Nudol, doc_module: any, module: any, hydrationpath: string|null ) {
+async function SSRPrepare( this: Nudol, module: any, doc_module: any, static_path: any, ctx: Context  ) {
+
 	return createElement(
 		doc_module.default,
-		{ hydrationScript: this.hydrationScript.bind(this, hydrationpath!) },
-		createElement( module.default )
+		{ hydrationScript: this.hydrationScript.bind(this, static_path!) },
+		createElement( module.default, ctx.params )
 	)
- 
+
 } 
 
 
-function SSR( this: Nudol,  doc_module: any, module: any, hydrationpath: string|null ) {
+async function SSR( this: Nudol, module: any, doc_module: any, static_path: string, ctx: Context ) {
 	let result = undefined;
 
 	if( doc_module ) {
-		result = (SSRPrepare.bind( this ))( doc_module, module, hydrationpath )
+		result = await SSRPrepare.bind( this )( module, doc_module, static_path, ctx )
 	} else {
-		result = createElement( module.default )
+
+		// if loadData
+		// result = createElement( builder.module.default, { ...ctx.params, ...await module.loadData() } )
+		
+		result = createElement( module.default, ctx.params )
 	}
 
 	return new Response( renderToString(result), {
@@ -73,19 +80,36 @@ function SSR( this: Nudol,  doc_module: any, module: any, hydrationpath: string|
 }
 
 
-async function HydrationToTemp( this: Nudol, build_file: any, component_file: any ): void {
+async function tempStatic( this: Nudol, builder: Builder ): Promise<void> {
 
-	await Bun.write( Bun.file( build_file ),
+	const component_file = path.join( process.cwd(), builder.root, builder.dir!, builder.name! )
+
+	if( builder.module.loadData ) {
+		await Bun.write( Bun.file( builder.temp! ),
 		`
-			import { hydrateRoot } from "react-dom/client"\n
-			import HydrationComponent from "${component_file}"\n
-			hydrateRoot(document.getElementById('root'), <HydrationComponent></HydrationComponent>)\n
+			import { createRoot, createElement } from "react-dom/client"
+			import HydrationComponent from "${component_file}"
+
+			// window.location.pathname
+			//
+			// if()
+
+			createRoot(document.getElementById('root')).render( createElement(HydrationComponent, {}))
 		`
-	)
+		)
+	} else {
+		await Bun.write( Bun.file( builder.temp! ),
+		`
+			import { createRoot } from "react-dom/client"
+			import HydrationComponent from "${component_file}"
+			createRoot(document.getElementById('root')).render(<HydrationComponent></HydrationComponent>)
+		`
+		)
+	}
 
 }
 
-async function HydrationBuild( this: Nudol, build_file: any ): Promise<BuildOutput> {
+async function buildStatic( this: Nudol, build_file: any ): Promise<BuildOutput> {
 
 	return await Bun.build({
 		entrypoints: [ build_file ],
@@ -98,21 +122,50 @@ async function HydrationBuild( this: Nudol, build_file: any ): Promise<BuildOutp
 
 }
 
-function HydrationToStatic( this: Nudol, static_path: string, result: any, params: any) {
+function generateStatic( this: Nudol, builder: Builder, result: BuildOutput, params: RoutesParams ) {
 
-
-	this.static_routes[ static_path ] = new Response( result.outputs[0], { 
+	this.static_routes[ builder.static! ] = new Response( result.outputs[0], { 
 		headers: { 
 			"Content-Type" : "text/javascript;charset=utf-8", 
 			...params.headers
 		}
 	} )
 
+}
+
+function generatePath( this: Nudol, builder: Builder ) {
+
+	if (builder.stem == "_document") {
+	} else if(builder.stem  == "index") {
+
+		return "/"
+
+	} else {
+
+		return path.join( "/", builder.dir!, builder.stem! ).replaceAll("\\", "/")
+		
+	}
+
+	return undefined
 
 }
 
 export interface RoutesParams {
 	headers?: any,
+}
+
+
+interface Builder {
+	root: string,     // fsRoutes root dir "./routes" e.g
+	doc_module?: any, // _document file if exists
+	module?: any,     // module from file
+	name?: string,    // name of file with ext
+	stem?: string,    // name of file without ext
+	dir?: string,     // dir of file
+	temp?: string,    // file location in .temp folder
+	static?: string,  // hydration static path for handlers
+	path?: string, 	  // handler path 
+	handler?: Handler,
 }
 
 export async function fsRoutes(this: Nudol, routes_directory_path: string, params: RoutesParams = { headers: {} } ) {
@@ -121,65 +174,51 @@ export async function fsRoutes(this: Nudol, routes_directory_path: string, param
 		await mkdir( path.join( process.cwd(), this.temp_path) )
 	}
 
-	this.routes_path = routes_directory_path;
+	const builder: Builder = {
+		root: routes_directory_path,
+		doc_module: await findDocumentFile( routes_directory_path ) 
+	} 
 
-	const files = await readdir( this.routes_path, { recursive: true, withFileTypes: true } )
-
-	const doc_module = await findDocumentFile( this.routes_path )
+	const files = await readdir( builder.root, { recursive: true, withFileTypes: true } )
 
 	for( const file of files ) {
 
-		if ( file.isFile() ) {
+		if ( !file.isFile() ) continue; 
 
-			const full_path = path.join(file.parentPath, path.parse( file.name).name )
+		builder.name   = file.name;
+		builder.stem   = path.parse( file.name ).name
+		builder.dir    = path.relative( builder.root, file.parentPath);
+		builder.temp   = path.join( process.cwd(), this.temp_path, builder.dir, builder.name ) 
+		builder.module = await import( path.join(process.cwd(), file.parentPath, file.name) )
 
-			const file_path = path.join( ...full_path.split(path.sep).slice(path.join(this.routes_path).split(path.sep).length, full_path.split(path.sep).length ) )
+		tempStatic.bind( this )( builder )
 
-			const component_file = path.join( process.cwd(), this.routes_path!, file_path)
+		const result = await buildStatic.bind(this)( builder.temp )
 
-			const { dir, name } = path.parse( file_path ) 
+		Log.buildError( result )
 
-			const build_path = path.join( process.cwd(), this.temp_path, dir, name ) 
-			const build_file = path.join( build_path + ".tsx" ) 
+		builder.static = path.join("/", this.temp_path, result.outputs[0].path ).replaceAll("\\", "/")
 
-			HydrationToTemp.bind(this)( build_file, component_file )
+		generateStatic.bind(this)( builder, result, params )
 
-			const result = await HydrationBuild.bind(this)( build_file )
+		builder.path = generatePath.bind(this)( builder )
 
-			if(!result.success) {
-				console.log(result.logs)
-				throw new Error("client error")
-			} 
 
-			const static_path = path.join("/", this.temp_path, result.outputs[0].path ).replaceAll("\\", "/")
 
-			HydrationToStatic.bind(this)( static_path, result, params )
+		if( !builder.path ) continue; 
+		if( !builder.module.default ) continue;
 
-			try {
-				const import_path = path.join(process.cwd(), file.parentPath, file.name)
-				const module = await import(import_path)
+		builder.handler = generateHandler(Method.GET, builder.path!, builder.static)
 
-				const {name} = path.parse( file.name )
+		const module = builder.module
+		const doc_module = builder.doc_module
+		const static_path = builder.static
 
-				if (name == "_document") {
-				} else if(name == "index") {
+		this.handlers.set( builder.handler, async ( ctx: Context ) => {
+			return await (SSR.bind(this))( module, doc_module, static_path!, ctx )
+		})
 
-					this.handlers.set(generateRoute(Method.GET, "/", static_path), async () => {
-						return (SSR.bind(this))(doc_module, module, static_path)
-					})
-
-				} else {
-					this.handlers.set(generateRoute(Method.GET, path.join( "/", file_path).replaceAll("\\", "/"), static_path), async () => {
-						return (SSR.bind(this))(doc_module, module, static_path)
-					})
-				}
-			} catch (error) {
-
-				console.log("Error import file", error)
-
-			}
-
-		}
 	}
 
 } 
+

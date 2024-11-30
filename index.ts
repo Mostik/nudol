@@ -1,7 +1,7 @@
 import { fsRoutes, hydrationScript, type RoutesParams } from "./src/filesystem.ts";
 import { ws, upgrade } from "./src/websocket"
 
-import { generateRoute, generateContext } from "./src/routes";
+import { generateHandler, generateContext } from "./src/routes";
 import { type Context, type Handler } from "./src/routes"
 import { type WebSocket } from "./src/websocket"
 import { type Server } from "bun"
@@ -82,7 +82,7 @@ export function Nudol( config: Config = {
 		notfound: function ( methods: Method[] , fn: (context: Context) => void ) {
 
 			for(let method of methods) {
-				this.handlers.set(generateRoute(method, "404"), fn)
+				this.handlers.set(generateHandler(method, "404"), fn)
 			}
 
 		},
@@ -114,7 +114,7 @@ function listen( this: Nudol ) {
 		keyFile: this.config.key,
 		certFile: this.config.cert,
 
-		async fetch( req: Request ) {
+		fetch( req: Request ) {
 
 			self.url = new URL(req.url)
 			

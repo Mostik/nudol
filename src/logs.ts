@@ -1,3 +1,4 @@
+import type { BuildOutput } from "bun"
 import { Nudol } from "../index.ts"
 
 export function start( nudol: Nudol ) {
@@ -15,4 +16,12 @@ export function start( nudol: Nudol ) {
 		console.log(nudol.websocket)
 	}
 
+}
+
+
+export function buildError( result: BuildOutput ) {
+	if(!result.success) {
+		console.log(result.logs)
+		throw new Error("client error")
+	} 
 }

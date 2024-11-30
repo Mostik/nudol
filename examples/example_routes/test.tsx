@@ -1,8 +1,16 @@
 
+export async function loadData() {
 
+	const response = await fetch("http://localhost:3000/getUser")
 
-export default function() {
+	return await response.json() 
+}
+
+export default function( props: any ) {
+
+	console.log( props )
+
 	return(
-		<div> Test page </div>
+		<div> Test page, { props.name } </div>
 	)
 }

@@ -1,5 +1,5 @@
 import type { Nudol } from ".."
-import { generateRoute } from "./routes"
+import { generateHandler } from "./routes"
 import { type Context } from "./routes"
 
 export enum Method {
@@ -16,13 +16,13 @@ export enum Method {
 
 export function get( this: Nudol, path: string, fn: (request: Context) => void ) {
 
-	this.handlers.set(generateRoute(Method.GET, path), fn)
+	this.handlers.set(generateHandler(Method.GET, path), fn)
 
 }
 
 export function post( this: Nudol, path: string, fn: (request: Context) => void ) {
 
-	this.handlers.set(generateRoute(Method.POST, path), fn)
+	this.handlers.set(generateHandler(Method.POST, path), fn)
 
 }
 
