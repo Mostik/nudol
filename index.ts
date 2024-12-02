@@ -24,7 +24,6 @@ interface Config {
 export interface Nudol {
 	config: Config,
 
-	url?: URL;
 	handlers: Map<Handler, (context: Context) => any>;
 	routes_path: string|null;
 	websocket: WebSocket | null;
@@ -65,7 +64,6 @@ export function Nudol( config: Partial<Config> = {} ): Nudol {
 			cert: undefined,
 			...config
 		} as Config,
-		url: undefined,
 		handlers: new Map([]),
 		routes_path: null,
 		websocket: null, 
@@ -113,13 +111,11 @@ function listen( this: Nudol ) {
 
 		fetch( req: Request ) {
 
-			self.url = new URL(req.url)
-			
 			for(const [handler, handler_function] of self.handlers) {
 
 				if( req.method != handler.method ) continue;
 
-				let check = self.url.pathname.match( handler.regexp ) 
+				let check = new URL(req.url).pathname.match( handler.regexp ) 
 
 				if( check ) {
 
@@ -134,7 +130,7 @@ function listen( this: Nudol ) {
 			if( notfound ) return notfound[1]( generateContext( req, {}) ) 
 
 			// if(self.websocket != null) {
-			// 	if(self.websocket.path == self.url.pathname) {
+			// 	if(self.websocket.path == new URL(req.url).pathname) {
 			// 		if(self.upgrade_function) {
 			// 			const success = await self.upgrade_function( this, req )
 			//
