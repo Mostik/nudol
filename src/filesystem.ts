@@ -68,28 +68,21 @@ async function tempStatic( this: Nudol, builder: Builder ): Promise<void> {
 
 	const component_file = path.join( process.cwd(), builder.root, builder.dir!, builder.name! )
 
-	if( builder.module.loadData ) {
-		await Bun.write( Bun.file( builder.temp! ),
-		`
-			import { createRoot, createElement } from "react-dom/client"
-			import HydrationComponent from "${component_file}"
+	let template_code = undefined;
 
-			// window.location.pathname
-			//
-			// if()
+	template_code = 
+	`
+		import { createElement } from "react"
+		import { createRoot } from "react-dom/client"
+		import HydrationComponent from "${component_file}"
 
-			createRoot(document.getElementById('root')).render( createElement(HydrationComponent, {}))
-		`
-		)
-	} else {
-		await Bun.write( Bun.file( builder.temp! ),
-		`
-			import { createRoot } from "react-dom/client"
-			import HydrationComponent from "${component_file}"
-			createRoot(document.getElementById('root')).render(<HydrationComponent></HydrationComponent>)
-		`
-		)
-	}
+		const params = location.pathname.match( "${ builder.handler?.regexp }" )
+
+		createRoot(document.getElementById('root')).render( createElement(HydrationComponent, params.groups ))
+
+	`
+		
+	await Bun.write( Bun.file( builder.temp! ), template_code )
 
 }
 
@@ -175,9 +168,10 @@ export async function fsRoutes(this: Nudol, root_path: string, params: RoutesPar
 		builder.temp   = path.join( process.cwd(), this.temp_path, builder.dir, builder.name ) 
 		builder.path   = generatePath.bind(this)( builder )
 		builder.module = await import( path.join(process.cwd(), file.parentPath, file.name) )
-		builder.handler = generateHandler(Method.GET, builder.path!, builder.static)
 
 		if( !builder.path || !builder.module.default ) continue; 
+
+		builder.handler = generateHandler(Method.GET, builder.path!, builder.static)
 
 		await tempStatic.bind( this )( builder )
 
