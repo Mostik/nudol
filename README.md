@@ -17,8 +17,9 @@ bun add @nudol/core
 * Doesn't work on any Runtime: **Node.js**, **Deno**, **Cloudflare Workers**, **Vercel**, **AWS Lambda**...
 
 
-## Example
+## Examples
 
+#### init 
 ```js
 import { Nudol } from "@nudol/core"
 
@@ -27,6 +28,7 @@ const nudol = Nudol()
 nudol.listen()
 ```
 
+#### create route 
 ```js
 import { Nudol } from "@nudol/core"
 
@@ -39,6 +41,7 @@ nudol.get("/", () => {
 nudol.listen()
 ```
 
+#### route variables 
 ```js
 import { Nudol } from "@nudol/core"
 
@@ -52,6 +55,7 @@ nudol.get("/user/{username}", (ctx) => {
 nudol.listen()
 ```
 
+#### react routes 
 ```
 bun add @nudol/core react react-dom
 ```
@@ -79,12 +83,13 @@ nudol.listen()
 ```
 
 
+#### full api
 ```js
 import { Nudol } from "@nudol/core"
 
 const nudol = Nudol( { port: 3000, hostname: "127.0.0.1" } )
 
-await nudol.static( "./static" )
+await nudol.fsStatic( "./static" )
 
 await nudol.fsRoutes( "./routes" )
 
@@ -105,7 +110,7 @@ nudol.notfound([Method.GET, Method.POST], () => {
 nudol.listen()
 ```
 
-#### Tailwind for "bun --watch"
+#### tailwind for "bun --watch"
 ```js
 import { Nudol } from "@nudol/core"
 
