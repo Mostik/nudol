@@ -10,19 +10,9 @@ import type { BuildOutput } from "bun";
 import * as Log from "./logs.ts";
 
 export function hydrationScript( this: Nudol, hydrationpath: string|null ) {
-
 	if( hydrationpath ) {
-		let file_path = (this.url!.pathname)?.toLowerCase()
-		
-		if(this.url!.pathname == "/") {
-
-			file_path = "index"
-
-		}
-
 		return createElement("script", { type: "module", src: path.join( hydrationpath ), defer: 'defer' })
 	}
-
 }
 
 
@@ -31,13 +21,11 @@ async function findDocumentFile( routes_path : any ) {
 
 	const files = await readdir( routes_path )
 
-
 	for (const file of files) {
 
 		const { name, ext } = path.parse(file)
 
 		if(name == "_document") {
-			[".js", ".ts", ".jsx", ".tsx"].includes(ext)
 			doc_module = await import(path.join(process.cwd(), path.join(routes_path!, ("_document" + ext))))
 		}
 
@@ -64,10 +52,6 @@ async function SSR( this: Nudol, module: any, doc_module: any, static_path: stri
 	if( doc_module ) {
 		result = await SSRPrepare.bind( this )( module, doc_module, static_path, ctx )
 	} else {
-
-		// if loadData
-		// result = createElement( builder.module.default, { ...ctx.params, ...await module.loadData() } )
-		
 		result = createElement( module.default, ctx.params )
 	}
 
