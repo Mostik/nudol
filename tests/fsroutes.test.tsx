@@ -19,6 +19,39 @@ test("fs init", async () => {
 
 });
 
+test("fs options", async () => {
+
+	const nudol = Nudol( { port: "11255", hostname: "127.0.0.1", logs: false } )
+
+	await nudol.fsRoutes( "./tests/test_routes", {
+		headers: {}
+	} )
+
+	nudol.listen();
+
+	expect(await (await fetch("http://127.0.0.1:11255/")).text()).toBe(renderToString(<div>index</div>))
+	expect(await (await fetch("http://127.0.0.1:11255/ggwp")).text()).toBe(renderToString(<h1>ggwp</h1>))
+	expect(await (await fetch("http://127.0.0.1:11255/names/alex")).text()).not.toBe(renderToString(<div><span>Dave</span></div>))
+	expect(await (await fetch("http://127.0.0.1:11255/names/dave")).text()).toBe(renderToString(<div><span>Dave</span></div>))
+	expect(await (await fetch("http://127.0.0.1:11255/names/taylor")).text()).toBe(renderToString(<Taylor/>))
+
+});
+
+test("fs options empty", async () => {
+
+	const nudol = Nudol( { port: "11256", hostname: "127.0.0.1", logs: false } )
+
+	await nudol.fsRoutes( "./tests/test_routes", {} )
+
+	nudol.listen();
+
+	expect(await (await fetch("http://127.0.0.1:11256/")).text()).toBe(renderToString(<div>index</div>))
+	expect(await (await fetch("http://127.0.0.1:11256/ggwp")).text()).toBe(renderToString(<h1>ggwp</h1>))
+	expect(await (await fetch("http://127.0.0.1:11256/names/alex")).text()).not.toBe(renderToString(<div><span>Dave</span></div>))
+	expect(await (await fetch("http://127.0.0.1:11256/names/dave")).text()).toBe(renderToString(<div><span>Dave</span></div>))
+	expect(await (await fetch("http://127.0.0.1:11256/names/taylor")).text()).toBe(renderToString(<Taylor/>))
+
+});
 
 
 test("fs default props (server)", async () => {

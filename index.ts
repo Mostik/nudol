@@ -1,4 +1,4 @@
-import { fsRoutes, hydrationScript, type RoutesParams } from "./src/filesystem.ts";
+import { fsRoutes, hydrationScript, type RoutesOptions } from "./src/filesystem.ts";
 import { ws, upgrade } from "./src/websocket"
 
 import { generateContext } from "./src/routes";
@@ -6,7 +6,7 @@ import { type Context, type Handler } from "./src/routes"
 import { type WebSocket } from "./src/websocket"
 import { type Server } from "bun"
 import { Method } from "./src/method.ts"
-import { fsStatic } from "./src/static.ts"
+import { fsStatic, type StaticOptions } from "./src/static.ts"
 
 import * as Methods from "./src/method.ts"
 import * as Log from "./src/logs.ts";
@@ -43,8 +43,8 @@ export interface Nudol {
 	upgrade: ( fn: ( server: Server, request: Request) => Promise<boolean> ) => void;
 
 
-	fsStatic: ( path: string, alias?: string ) => Promise<void>;
-	fsRoutes( routes_directory_path: string, params?: RoutesParams ): Promise<void>
+	fsStatic: ( path: string, alias?: StaticOptions ) => Promise<void>;
+	fsRoutes( routes_directory_path: string, params?: RoutesOptions ): Promise<void>
 
 	hydrationScript( hydrationpath: string ): any
 

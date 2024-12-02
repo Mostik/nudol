@@ -99,12 +99,12 @@ async function buildStatic( this: Nudol, builder: Builder ): Promise<BuildOutput
 
 }
 
-function generateStatic( this: Nudol, builder: Builder, result: BuildOutput, params: RoutesParams ) {
+function generateStatic( this: Nudol, builder: Builder, result: BuildOutput, options: RoutesOptions ) {
 
 	this.static_routes[ builder.static! ] = new Response( result.outputs[0], { 
 		headers: { 
 			"Content-Type" : "text/javascript;charset=utf-8", 
-			...params.headers
+			...options.headers
 		}
 	} )
 
@@ -127,7 +127,7 @@ function generatePath( this: Nudol, builder: Builder ) {
 
 }
 
-export interface RoutesParams {
+export interface RoutesOptions {
 	headers?: any,
 }
 
@@ -145,7 +145,12 @@ interface Builder {
 	handler?:    Handler,
 }
 
-export async function fsRoutes(this: Nudol, root_path: string, params: RoutesParams = { headers: {} } ) {
+export async function fsRoutes(this: Nudol, root_path: string, options: Partial<RoutesOptions> = {} ) {
+
+	options = {
+		headers: {},
+		...options
+	}
 
 	if(!(await exists( path.join( process.cwd(), this.temp_path)))) {
 		await mkdir( path.join( process.cwd(), this.temp_path) )
@@ -181,7 +186,7 @@ export async function fsRoutes(this: Nudol, root_path: string, params: RoutesPar
 
 		builder.static = path.join("/", this.temp_path, result.outputs[0].path ).replaceAll("\\", "/")
 
-		generateStatic.bind(this)( builder, result, params )
+		generateStatic.bind(this)( builder, result, options )
 
 		const module = builder.module
 		const doc_module = builder.doc_module
