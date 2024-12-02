@@ -4,7 +4,7 @@ export default function ( props: any ) {
 	console.log( props )
 
 	return (
-		<div>Hello, {props.name}</div>
+		<div>Hello, {props.user}</div>
 	)
 
 }
