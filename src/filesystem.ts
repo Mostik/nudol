@@ -93,10 +93,10 @@ async function tempStatic( this: Nudol, builder: Builder ): Promise<void> {
 
 }
 
-async function buildStatic( this: Nudol, build_file: any ): Promise<BuildOutput> {
+async function buildStatic( this: Nudol, builder: Builder ): Promise<BuildOutput> {
 
 	return await Bun.build({
-		entrypoints: [ build_file ],
+		entrypoints: [ builder.temp! ],
 		format: "esm",
 		minify: this.config.production, 
 		naming: '[hash].[ext]',
@@ -140,27 +140,27 @@ export interface RoutesParams {
 
 
 interface Builder {
-	root: string,     // fsRoutes root dir "./routes" e.g
-	doc_module?: any, // _document file if exists
-	module?: any,     // module from file
-	name?: string,    // name of file with ext
-	stem?: string,    // name of file without ext
-	dir?: string,     // dir of file
-	temp?: string,    // file location in .temp folder
-	static?: string,  // hydration static path for handlers
-	path?: string, 	  // handler path 
-	handler?: Handler,
+	root:        string, // fsRoutes root dir "./routes" e.g
+	module?:     any,    // module from file
+	doc_module?: any,    // _document file if exists
+	name?:       string, // name of file with ext
+	stem?:       string, // name of file without ext
+	dir?:        string, // dir of file
+	temp?:       string, // file location in .temp folder
+	static?:     string, // hydration static path for handlers
+	path?:       string, // handler path 
+	handler?:    Handler,
 }
 
-export async function fsRoutes(this: Nudol, routes_directory_path: string, params: RoutesParams = { headers: {} } ) {
+export async function fsRoutes(this: Nudol, root_path: string, params: RoutesParams = { headers: {} } ) {
 
 	if(!(await exists( path.join( process.cwd(), this.temp_path)))) {
 		await mkdir( path.join( process.cwd(), this.temp_path) )
 	}
 
 	const builder: Builder = {
-		root: routes_directory_path,
-		doc_module: await findDocumentFile( routes_directory_path ) 
+		root: root_path,
+		doc_module: await findDocumentFile( root_path ) 
 	} 
 
 	const files = await readdir( builder.root, { recursive: true, withFileTypes: true } )
@@ -173,26 +173,21 @@ export async function fsRoutes(this: Nudol, routes_directory_path: string, param
 		builder.stem   = path.parse( file.name ).name
 		builder.dir    = path.relative( builder.root, file.parentPath);
 		builder.temp   = path.join( process.cwd(), this.temp_path, builder.dir, builder.name ) 
+		builder.path   = generatePath.bind(this)( builder )
 		builder.module = await import( path.join(process.cwd(), file.parentPath, file.name) )
+		builder.handler = generateHandler(Method.GET, builder.path!, builder.static)
 
-		tempStatic.bind( this )( builder )
+		if( !builder.path || !builder.module.default ) continue; 
 
-		const result = await buildStatic.bind(this)( builder.temp )
+		await tempStatic.bind( this )( builder )
+
+		const result = await buildStatic.bind(this)( builder )
 
 		Log.buildError( result )
 
 		builder.static = path.join("/", this.temp_path, result.outputs[0].path ).replaceAll("\\", "/")
 
 		generateStatic.bind(this)( builder, result, params )
-
-		builder.path = generatePath.bind(this)( builder )
-
-
-
-		if( !builder.path ) continue; 
-		if( !builder.module.default ) continue;
-
-		builder.handler = generateHandler(Method.GET, builder.path!, builder.static)
 
 		const module = builder.module
 		const doc_module = builder.doc_module
