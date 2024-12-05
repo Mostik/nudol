@@ -1,12 +1,16 @@
-import { useEffect } from "react"
 
-export default function() {
+export async function loadData() {
 
-	useEffect( () => {
-		console.log("index")
-	}, [])
+	const response = await fetch("http://localhost:3000/somedata")
+
+	return { somedata: await response.text() }
+}
+
+export default function( props: any ) {
 
 	return (
-		<div>index page</div>
+		<div>
+			{ props.somedata }
+		</div>
 	)
 }

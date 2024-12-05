@@ -68,19 +68,31 @@ async function tempStatic( this: Nudol, builder: Builder ): Promise<void> {
 
 	const component_file = path.join( process.cwd(), builder.root, builder.dir!, builder.name! )
 
-	let template_code = undefined;
-
-	template_code = 
-	`
+	let template_code = `
 		import { createElement } from "react"
 		import { createRoot } from "react-dom/client"
 		import HydrationComponent from "${component_file}"
-
 		const params = location.pathname.match( "${ builder.handler?.regexp }" )
 
-		createRoot(document.getElementById('root')).render( createElement(HydrationComponent, params.groups ))
+	`;
 
-	`
+	if( builder.module.loadData ) {
+
+		template_code += 
+		`
+
+			import { loadData } from "${component_file}"
+			const data = await loadData()
+
+			createRoot(document.getElementById('root')).render( createElement(HydrationComponent, { ...params.groups, ...data } ))
+		`
+	} else {
+		template_code += 
+		`
+			createRoot(document.getElementById('root')).render( createElement(HydrationComponent, params.groups ))
+		`
+	}
+
 		
 	await Bun.write( Bun.file( builder.temp! ), template_code )
 
@@ -192,9 +204,16 @@ export async function fsRoutes(this: Nudol, root_path: string, options: Partial<
 		const doc_module = builder.doc_module
 		const static_path = builder.static
 
-		this.handlers.set( builder.handler, async ( ctx: Context ) => {
-			return await (SSR.bind(this))( module, doc_module, static_path!, ctx )
-		})
+		if( module.loadData ) {
+			this.handlers.set( builder.handler!, async ( ctx: Context ) => {
+				ctx.params = { ...ctx.params, ...await module.loadData() }
+				return await (SSR.bind(this))( module, doc_module, static_path!, ctx )
+			})
+		} else {
+			this.handlers.set( builder.handler!, async ( ctx: Context ) => {
+				return await (SSR.bind(this))( module, doc_module, static_path!, ctx )
+			})
+		}
 
 	}
 

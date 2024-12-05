@@ -6,8 +6,6 @@ test("minimal", () => {
 
 	const nudol = Nudol()
 
-	nudol.listen()
-
 	expect( typeof nudol ).toBe("object");
 	expect( nudol.config.port ).toBe(3000);	
 	expect( nudol.config.hostname ).toBe("0.0.0.0");	

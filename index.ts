@@ -8,6 +8,7 @@ import { type Server } from "bun"
 import { Method } from "./src/method.ts"
 import { fsStatic, type StaticOptions } from "./src/static.ts"
 
+
 import * as Methods from "./src/method.ts"
 import * as Log from "./src/logs.ts";
 
