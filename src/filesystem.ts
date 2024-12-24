@@ -71,7 +71,7 @@ async function tempStatic( this: Nudol, builder: Builder ): Promise<void> {
 	let template_code = `
 		import { createElement } from "react"
 		import { createRoot } from "react-dom/client"
-		import HydrationComponent from "${component_file}"
+		import HydrationComponent from "${component_file.replaceAll("\\", "/")}"
 		const params = location.pathname.match( "${ builder.handler?.regexp }" )
 
 	`;
