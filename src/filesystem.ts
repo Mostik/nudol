@@ -127,7 +127,7 @@ function generatePath( this: Nudol, builder: Builder ) {
 	if (builder.stem == "_document") {
 	} else if(builder.stem  == "index") {
 
-		return "/"
+		return path.join( "/", builder.dir! ).replaceAll("\\", "/")
 
 	} else {
 
